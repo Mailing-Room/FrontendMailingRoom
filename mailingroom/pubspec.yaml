@@ -1,9 +1,27 @@
+name: mailingroom
+description: A new Flutter project for managing mailroom operations.
+publish_to: 'none' # Mencegah publikasi ke pub.dev
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0' # Memastikan kompatibilitas Dart SDK
+
 dependencies:
   flutter:
     sdk: flutter
   
-  # Perhatikan dua spasi di bawah 'flutter:'
-  provider: ^6.0.0
+  # Manajemen state
+  provider: ^6.1.1
+  
+  # Firebase
   firebase_core: ^2.24.2
   firebase_auth: ^4.15.2
   cloud_firestore: ^4.13.5
+  
+  # UI dan utilitas
+  font_awesome_flutter: ^10.7.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
