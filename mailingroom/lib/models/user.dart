@@ -1,49 +1,31 @@
-// Path: lib/services/database_service.dart
+// Path: lib/models/user.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mailingroom/models/surat.dart';
+class MyUser {
+  final String uid;
+  final String email;
+  final String role; // 'pengirim', 'kurir', 'penerima'
 
-class DatabaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  MyUser({
+    required this.uid,
+    required this.email,
+    required this.role,
+  });
 
-  // Mendapatkan stream semua surat (untuk Dashboard Pengirim)
-  Stream<List<Surat>> getSuratList() {
-    return _db.collection('surat')
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Surat.fromFirestore(doc)).toList());
+  // Factory constructor untuk membuat objek MyUser dari Map (data Firestore)
+  factory MyUser.fromMap(Map<String, dynamic> map) {
+    return MyUser(
+      uid: map['uid'] ?? '',
+      email: map['email'] ?? '',
+      role: map['role'] ?? '',
+    );
   }
 
-  // Mendapatkan stream surat yang relevan untuk kurir (status 'Menunggu Kurir' atau 'Dalam Pengiriman')
-  Stream<List<Surat>> getKurirSurat() {
-    return _db.collection('surat')
-        .where('status', whereIn: ['Menunggu Kurir', 'Dalam Pengiriman'])
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Surat.fromFirestore(doc)).toList());
-  }
-
-  // Mendapatkan stream surat yang ditujukan ke penerima tertentu
-  Stream<List<Surat>> getSuratByPenerima(String penerimaEmail) {
-    return _db.collection('surat')
-        .where('penerimaTujuan', isEqualTo: penerimaEmail)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Surat.fromFirestore(doc)).toList());
-  }
-  
-  // Menambah surat baru
-  Future<void> addSurat(Surat surat) {
-    return _db.collection('surat').add(surat.toMap());
-  }
-
-  // Mengubah status surat
-  Future<void> updateSuratStatus(String suratId, String newStatus) {
-    return _db.collection('surat').doc(suratId).update({'status': newStatus});
-  }
-
-  // Mengubah detail surat yang sudah ada
-  Future<void> updateSurat(String suratId, Surat surat) {
-    return _db.collection('surat').doc(suratId).update(surat.toMap());
+  // Metode untuk mengkonversi objek MyUser menjadi Map (untuk disimpan ke Firestore)
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'email': email,
+      'role': role,
+    };
   }
 }

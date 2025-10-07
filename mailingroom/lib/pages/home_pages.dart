@@ -1,6 +1,7 @@
 // Path: lib/pages/home_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:mailingroom/models/user.dart';
 import 'package:provider/provider.dart';
 import '../auth/auth_service.dart';
 import 'dashboard/pengirim_dashboard.dart';
