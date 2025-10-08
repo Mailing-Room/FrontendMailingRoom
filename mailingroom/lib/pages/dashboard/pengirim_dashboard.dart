@@ -148,7 +148,7 @@ class PengirimDashboard extends StatelessWidget {
   Widget _buildSuratCard(BuildContext context, Surat surat) {
     Color statusColor;
     if (surat.status == 'Terkirim') {
-      statusColor = Colors.green;
+      statusColor = const Color.fromARGB(255, 20, 91, 23);
     } else if (surat.status == 'Menunggu Kurir') {
       statusColor = Colors.orange;
     } else {
