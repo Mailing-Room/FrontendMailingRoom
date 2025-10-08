@@ -40,7 +40,7 @@ class HomePage extends StatelessWidget {
   Widget _buildDashboard(BuildContext context, MyUser user) {
     switch (user.role) {
       case 'pengirim':
-        return const PengirimDashboard();
+        return PengirimDashboard();
       case 'kurir':
         return const KurirDashboard();
       case 'penerima':

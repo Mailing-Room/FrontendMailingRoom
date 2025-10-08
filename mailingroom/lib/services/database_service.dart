@@ -1,49 +1,73 @@
 // Path: lib/services/database_service.dart
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mailingroom/models/surat.dart';
+import '../models/surat.dart';
 
 class DatabaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  // Data surat dummy
+  final List<Surat> _dummySuratList = [
+    Surat(
+      id: '1',
+      nomor: '123/PKS/X/2025',
+      perihal: 'Perjanjian Kerja Sama Proyek A',
+      deskripsiSurat: 'Dokumen perjanjian kerja sama proyek',
+      sifatSurat: 'Penting',
+      fileSuratUrl: null,
+      lpSuratUrl: null,
+      berat: 100.0,
+      pengirimAsal: 'PT Sentosa Abadi',
+      pengirimDivisi: 'Marketing',
+      pengirimDepartemen: 'Sales',
+      penerimaTujuan: 'penerima@mailingroom.com',
+      penerimaDivisi: 'Keuangan',
+      penerimaDepartemen: 'Accounting',
+      jenisSurat: 'Masuk',
+      status: 'Menunggu Kurir',
+      tanggal: '2025-10-08',
+    ),
+    Surat(
+      id: '2',
+      nomor: '321/ED/X/2025',
+      perihal: 'Surat Edaran Libur Nasional',
+      deskripsiSurat: 'Surat edaran resmi mengenai libur nasional',
+      sifatSurat: 'Biasa',
+      fileSuratUrl: null,
+      lpSuratUrl: null,
+      berat: 50.0,
+      pengirimAsal: 'Divisi HRD',
+      pengirimDivisi: 'HR',
+      pengirimDepartemen: 'General Affairs',
+      penerimaTujuan: 'penerima@mailingroom.com',
+      penerimaDivisi: 'Semua',
+      penerimaDepartemen: 'Semua',
+      jenisSurat: 'Keluar',
+      status: 'Terkirim',
+      tanggal: '2025-10-07',
+    ),
+  ];
 
-  // Mendapatkan stream semua surat (untuk Dashboard Pengirim)
-  Stream<List<Surat>> getSuratList() {
-    return _db.collection('surat')
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Surat.fromFirestore(doc)).toList());
+  // Mengubah Stream menjadi data statis
+  Stream<List<Surat>> getSuratList() async* {
+    yield _dummySuratList;
   }
 
-  // Mendapatkan stream surat yang relevan untuk kurir (status 'Menunggu Kurir' atau 'Dalam Pengiriman')
-  Stream<List<Surat>> getKurirSurat() {
-    return _db.collection('surat')
-        .where('status', whereIn: ['Menunggu Kurir', 'Dalam Pengiriman'])
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Surat.fromFirestore(doc)).toList());
+  Stream<List<Surat>> getKurirSurat() async* {
+    yield _dummySuratList.where((s) => s.status == 'Menunggu Kurir' || s.status == 'Dalam Pengiriman').toList();
   }
 
-  // Mendapatkan stream surat yang ditujukan ke penerima tertentu
-  Stream<List<Surat>> getSuratByPenerima(String penerimaEmail) {
-    return _db.collection('surat')
-        .where('penerimaTujuan', isEqualTo: penerimaEmail)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Surat.fromFirestore(doc)).toList());
+  Stream<List<Surat>> getSuratByPenerima(String penerimaEmail) async* {
+    yield _dummySuratList.where((s) => s.penerimaTujuan == penerimaEmail).toList();
   }
   
-  // Menambah surat baru
-  Future<void> addSurat(Surat surat) {
-    return _db.collection('surat').add(surat.toMap());
+  // Metode tambah, ubah, dan hapus dummy
+  Future<void> addSurat(Surat surat) async {
+    _dummySuratList.add(surat);
   }
 
-  // Mengubah status surat
-  Future<void> updateSuratStatus(String suratId, String newStatus) {
-    return _db.collection('surat').doc(suratId).update({'status': newStatus});
+  Future<void> updateSuratStatus(String suratId, String newStatus) async {
+    // Tidak melakukan apa-apa
   }
 
-  // Mengubah detail surat yang sudah ada
-  Future<void> updateSurat(String suratId, Surat surat) {
-    return _db.collection('surat').doc(suratId).update(surat.toMap());
+  Future<void> updateSurat(String suratId, Surat surat) async {
+    // Tidak melakukan apa-apa
   }
 }

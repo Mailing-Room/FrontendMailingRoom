@@ -1,6 +1,11 @@
+// Path: lib/auth/login_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:mailingroom/auth/auth_service.dart';
 import 'package:mailingroom/auth/register_page.dart';
+import 'package:provider/provider.dart';
+import 'package:mailingroom/models/user.dart';
+import 'package:mailingroom/pages/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,16 +22,26 @@ class _LoginPageState extends State<LoginPage> {
 
   String _errorMessage = '';
 
-  Future<void> _login() async {
+  Future<void> _login(String role) async {
     if (_formKey.currentState!.validate()) {
       final user = await _authService.signInWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
       );
-      if (user == null) {
+      if (user == null || user.role != role) {
         setState(() {
           _errorMessage = 'Login gagal. Periksa kembali email dan password.';
         });
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => Provider.value(
+              value: user,
+              child: const HomePage(),
+            ),
+          ),
+        );
       }
     }
   }
@@ -92,8 +107,16 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 const SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: _login,
-                  child: const Text('Login'),
+                  onPressed: () => _login('user'),
+                  child: const Text('Login sebagai User'),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () => _login('kurir'),
+                  child: const Text('Login sebagai Kurir'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 TextButton(

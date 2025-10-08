@@ -1,6 +1,10 @@
 // Path: lib/auth/register_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:mailingroom/auth/auth_service.dart';
+import 'package:provider/provider.dart';
+import 'package:mailingroom/models/user.dart';
+import 'package:mailingroom/pages/home_page.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -30,7 +34,7 @@ class _RegisterPageState extends State<RegisterPage> {
           _errorMessage = 'Registrasi gagal. Coba lagi.';
         });
       } else {
-        Navigator.pop(context); // Kembali ke halaman login setelah registrasi berhasil
+        Navigator.pop(context);
       }
     } else {
       setState(() {
@@ -92,7 +96,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Pilih Peran',
                     border: OutlineInputBorder(),
                   ),
-                  items: ['pengirim', 'kurir', 'penerima']
+                  items: ['user', 'kurir'] // Hanya user dan kurir
                       .map((role) => DropdownMenuItem(
                             value: role,
                             child: Text(role.toUpperCase()),
