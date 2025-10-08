@@ -16,7 +16,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     // Memberikan data user dummy ke seluruh aplikasi
     return Provider<MyUser?>(
-      create: (_) => MyUser(uid: 'user_id_dummy', email: 'pengirim@mailingroom.com', role: 'user'),
+      create: (_) => MyUser(
+          uid: 'user_id_dummy',
+          email: 'pengirim@mailingroom.com',
+          role: 'user'),
       child: MaterialApp(
         title: 'Mailingroom App',
         theme: ThemeData(
