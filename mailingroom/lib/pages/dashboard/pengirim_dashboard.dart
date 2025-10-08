@@ -1,89 +1,118 @@
 // Path: lib/pages/dashboards/pengirim_dashboard.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:mailingroom/services/database_service.dart';
 import 'package:mailingroom/models/surat.dart';
-import 'package:mailingroom/models/user.dart';
+import 'package:mailingroom/pages/add_edit_surat_pages.dart';
+import 'package:mailingroom/pages/detail_surat.dart';
+import 'package:mailingroom/services/database_service.dart';
 
 class PengirimDashboard extends StatelessWidget {
-  const PengirimDashboard({super.key});
+  PengirimDashboard({super.key});
+
+  final List<Surat> _dummySuratList = [
+    Surat(
+      id: '1',
+      nomor: '123/PKS/X/2025',
+      perihal: 'Perjanjian Kerja Sama Proyek A',
+      deskripsiSurat: 'Dokumen perjanjian kerja sama proyek',
+      sifatSurat: 'Penting',
+      fileSuratUrl: null,
+      lpSuratUrl: null,
+      berat: 100.0,
+      pengirimAsal: 'PT Sentosa Abadi',
+      pengirimDivisi: 'Marketing',
+      pengirimDepartemen: 'Sales',
+      penerimaTujuan: 'penerima@mailingroom.com',
+      penerimaDivisi: 'Keuangan',
+      penerimaDepartemen: 'Accounting',
+      jenisSurat: 'Masuk',
+      status: 'Menunggu Kurir',
+      tanggal: '2025-10-08',
+    ),
+    Surat(
+      id: '2',
+      nomor: '321/ED/X/2025',
+      perihal: 'Surat Edaran Libur Nasional',
+      deskripsiSurat: 'Surat edaran resmi mengenai libur nasional',
+      sifatSurat: 'Biasa',
+      fileSuratUrl: null,
+      lpSuratUrl: null,
+      berat: 50.0,
+      pengirimAsal: 'Divisi HRD',
+      pengirimDivisi: 'HR',
+      pengirimDepartemen: 'General Affairs',
+      penerimaTujuan: 'penerima@mailingroom.com',
+      penerimaDivisi: 'Semua',
+      penerimaDepartemen: 'Semua',
+      jenisSurat: 'Keluar',
+      status: 'Terkirim',
+      tanggal: '2025-10-07',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Surat>>(
-      stream: DatabaseService().getSuratList(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    // Karena tidak menggunakan StreamBuilder, kita bisa langsung menggunakan data dummy
+    final int totalMasuk = _dummySuratList.where((s) => s.jenisSurat == 'Masuk').length;
+    final int totalKeluar = _dummySuratList.where((s) => s.jenisSurat == 'Keluar').length;
 
-        if (snapshot.hasError) {
-          return const Center(child: Text('Terjadi kesalahan saat memuat data.'));
-        }
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildStatCards(totalMasuk, totalKeluar),
+            const SizedBox(height: 20),
+            const Text(
+              'Semua Surat',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _dummySuratList.length,
+                itemBuilder: (context, index) {
+                  final surat = _dummySuratList[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: ListTile(
+                      title: Text(surat.perihal),
+                      subtitle: Text('No. ${surat.nomor} | Status: ${surat.status}'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => SuratDetailPage(surat: surat)),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditSuratPage()),
+          );
+        },
+        backgroundColor: Colors.green, // Ganti warna latar belakang
+        tooltip: 'Tambah Surat Baru', // Tambahkan tooltip
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Belum ada data surat yang dicatat.'));
-        }
-
-        final List<Surat> suratList = snapshot.data!;
-        
-        // Menghitung statistik
-        final int totalSuratMasuk = suratList.where((s) => s.jenisSurat == 'Masuk').length;
-        final int totalSuratKeluar = suratList.where((s) => s.jenisSurat == 'Keluar').length;
-        
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Ringkasan Surat',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatCard('Surat Masuk', totalSuratMasuk, Icons.inbox, Colors.blue),
-                  _buildStatCard('Surat Keluar', totalSuratKeluar, Icons.outbox, Colors.orange),
-                ],
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Daftar Surat',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: suratList.length,
-                  itemBuilder: (context, index) {
-                    final surat = suratList[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: surat.jenisSurat == 'Masuk' ? Colors.blue : Colors.orange,
-                          child: Icon(
-                            surat.jenisSurat == 'Masuk' ? Icons.arrow_downward : Icons.arrow_upward,
-                            color: Colors.white,
-                          ),
-                        ),
-                        title: Text(surat.perihal),
-                        subtitle: Text('No: ${surat.nomor} | Status: ${surat.status}'),
-                        onTap: () {
-                          // TODO: Navigasi ke halaman detail surat
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Widget _buildStatCards(int totalMasuk, int totalKeluar) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: [
+        _buildStatCard('Masuk', totalMasuk, Icons.arrow_downward, Colors.blue),
+        _buildStatCard('Keluar', totalKeluar, Icons.arrow_upward, Colors.orange),
+      ],
     );
   }
 
@@ -96,15 +125,9 @@ class PengirimDashboard extends StatelessWidget {
           children: [
             Icon(icon, size: 40, color: color),
             const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(
-              '$count',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+            Text('$count', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           ],
         ),
       ),

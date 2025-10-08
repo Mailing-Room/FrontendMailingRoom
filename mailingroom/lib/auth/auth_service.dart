@@ -1,80 +1,26 @@
 // Path: lib/auth/auth_service.dart
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mailingroom/models/user.dart';
+
+import 'package:flutter/material.dart';
+import '../models/user.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-
-  // Stream untuk memantau status otentikasi pengguna
-  Stream<MyUser?> get user {
-    return _auth.authStateChanges().asyncMap((User? user) async {
-      if (user == null) {
-        return null;
-      }
-      // Ambil data user dari Firestore.
-      DocumentSnapshot doc = await _db.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        return MyUser.fromMap(doc.data() as Map<String, dynamic>);
-      }
-      return null;
-    });
-  }
-
-  // Mendaftar dengan email dan password
-  Future<MyUser?> registerWithEmailAndPassword(String email, String password, String role) async {
-    try {
-      UserCredential result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      User? user = result.user;
-
-      // Simpan data user ke Firestore
-      await _db.collection('users').doc(user!.uid).set({
-        'uid': user.uid,
-        'email': email,
-        'role': role,
-      });
-
-      return MyUser(uid: user.uid, email: email, role: role);
-    } on FirebaseAuthException catch (e) {
-      print('Firebase Auth Exception: ${e.code}');
-      // Anda bisa mengembalikan pesan error yang lebih spesifik di sini
-      return null;
-    } catch (e) {
-      print('Error: ${e.toString()}');
-      return null;
-    }
-  }
-
-  // Masuk dengan email dan password
+  // Metode login dummy
   Future<MyUser?> signInWithEmailAndPassword(String email, String password) async {
-    try {
-      UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      User? user = result.user;
-
-      // Ambil data user dari Firestore
-      DocumentSnapshot doc = await _db.collection('users').doc(user!.uid).get();
-      if (doc.exists) {
-        return MyUser.fromMap(doc.data() as Map<String, dynamic>);
-      }
-      return null;
-    } on FirebaseAuthException catch (e) {
-      print('Firebase Auth Exception: ${e.code}');
-      return null;
-    } catch (e) {
-      print('Error: ${e.toString()}');
-      return null;
+    // Simulasi login sukses
+    if (email == 'pengirim@mailingroom.com' && password == 'password123') {
+      return MyUser(uid: 'pengirim_id_dummy', email: 'pengirim@mailingroom.com', role: 'pengirim');
     }
+    return null;
   }
 
-  // Keluar (sign out)
+  // Metode registrasi dummy
+  Future<MyUser?> registerWithEmailAndPassword(String email, String password, String role) async {
+    return MyUser(uid: 'new_user_id', email: email, role: role);
+  }
+
+  // Metode untuk sign out (keluar)
   Future<void> signOut() async {
-    await _auth.signOut();
+    // Tidak melakukan apa-apa karena tidak ada otentikasi
+    return;
   }
 }
