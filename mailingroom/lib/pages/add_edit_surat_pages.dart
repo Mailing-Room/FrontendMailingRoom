@@ -22,7 +22,7 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
   // final DatabaseService _db = DatabaseService();
   final _formKey = GlobalKey<FormState>();
 
-  // ✅ VARIABEL BARU UNTUK MENYIMPAN FILE YANG DIPILIH
+  //  VARIABEL BARU UNTUK MENYIMPAN FILE YANG DIPILIH
   File? _fileSurat;
   File? _fileLP;
 
@@ -80,7 +80,7 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
     super.dispose();
   }
 
-  // ✅ FUNGSI SIMPAN YANG DIPERBARUI DENGAN VALIDASI FILE
+  //  FUNGSI SIMPAN YANG DIPERBARUI DENGAN VALIDASI FILE
   void _saveForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -177,7 +177,7 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
                 validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
               ),
               
-              // ✅ UI BARU UNTUK UPLOAD FILE
+              //  UI BARU UNTUK UPLOAD FILE
               _buildSectionTitle('Detail Surat & Lampiran'),
               DropdownButtonFormField<String>(
                 value: _selectedJenisSurat,
@@ -283,7 +283,7 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
 
               const SizedBox(height: 30),
 
-              // ✅ TOMBOL BAWAH YANG SUDAH DIPERBARUI
+              //  TOMBOL BAWAH YANG SUDAH DIPERBARUI
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(

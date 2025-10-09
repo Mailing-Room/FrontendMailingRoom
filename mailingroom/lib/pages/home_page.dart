@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user.dart';
 import 'add_edit_surat_pages.dart';
+import 'tracking_page.dart'; //  1. FILE BARU DIIMPOR DI SINI
 import '../widgets/section_header.dart';
 import '../widgets/surat_card.dart';
 import '../services/database_service.dart';
@@ -68,7 +69,7 @@ class _HomePageState extends State<HomePage> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 2.8, // Disesuaikan
+                  childAspectRatio: 2.8,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
@@ -77,8 +78,11 @@ class _HomePageState extends State<HomePage> {
                         Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditSuratPage()));
                       }
                     ),
+                    //  2. LOGIKA NAVIGASI DITAMBAHKAN DI SINI
                     _quickActionCard(
-                      Icons.travel_explore, 'Tracking Surat', 'Lacak posisi surat', Colors.green, () {}
+                      Icons.travel_explore, 'Tracking Surat', 'Lacak posisi surat', Colors.green, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const TrackingPage()));
+                      }
                     ),
                     _quickActionCard(
                       Icons.inbox, 'Surat Masuk', 'Lihat kotak masuk', Colors.deepPurple, () {}
@@ -99,7 +103,7 @@ class _HomePageState extends State<HomePage> {
                   mainAxisSpacing: 12,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 2.5, // Disesuaikan
+                  childAspectRatio: 2.5,
                   children: [
                     _statCard('Surat Masuk', '1', Icons.inbox, Colors.blue, Colors.blue),
                     _statCard('Surat Keluar', '1', Icons.send, Colors.orange, Colors.orange),
@@ -110,7 +114,7 @@ class _HomePageState extends State<HomePage> {
 
                 const SizedBox(height: 24),
 
-                const SectionHeader(title: '📂 Surat Terbaru', actionLabel: 'Lihat Semua', onAction: null),
+                const SectionHeader(title: ' Surat Terbaru', actionLabel: 'Lihat Semua', onAction: null),
                 const SizedBox(height: 8),
                 Column(
                   children: suratList.map((s) => SuratCard(surat: s)).toList(),
@@ -134,7 +138,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ✅ _quickActionCard DENGAN FITTEDBOX
   Widget _quickActionCard(IconData icon, String title, String subtitle, Color color, VoidCallback? onTap) {
     return InkWell(
       onTap: onTap,
@@ -157,7 +160,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ✅ _statCard DENGAN FITTEDBOX
   Widget _statCard(String title, String value, IconData icon, Color bg, Color iconColor) {
     return Container(
       decoration: BoxDecoration(
