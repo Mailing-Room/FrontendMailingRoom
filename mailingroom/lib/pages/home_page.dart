@@ -3,141 +3,81 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user.dart';
 import 'add_edit_surat_pages.dart';
-import 'tracking_page.dart'; //  1. FILE BARU DIIMPOR DI SINI
+import 'surat_rangkuman_page.dart'; // DIUBAH: Impor halaman baru
+import 'tracking_page.dart';
 import '../widgets/section_header.dart';
 import '../widgets/surat_card.dart';
 import '../services/database_service.dart';
 import '../models/surat.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
-
-  static const Color primaryBlue = Color(0xFF1E88E5);
-  static const Color accentPurpleA = Color(0xFF8E24AA);
-
-  final DatabaseService _db = DatabaseService();
+// BARU: Ekstrak konten Beranda ke widget sendiri agar lebih rapi
+class BerandaContent extends StatelessWidget {
+  const BerandaContent({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final MyUser? user = Provider.of<MyUser?>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: accentPurpleA, borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.description, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-              Text('mailingroom', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('Kelola surat masuk dan keluar', style: TextStyle(fontSize: 12, color: Colors.black54)),
-            ]),
-          ],
-        ),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: CircleAvatar(backgroundColor: accentPurpleA, child: const Icon(Icons.person, color: Colors.white)),
+    final DatabaseService db = DatabaseService();
+    return StreamBuilder<List<Surat>>(
+      stream: db.getSuratList(),
+      builder: (context, snapshot) {
+        final suratList = snapshot.data ?? [];
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Aksi Cepat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 2.8,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _quickActionCard(Icons.add, 'Kirim Surat', 'Kirim surat keluar', Colors.blue, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditSuratPage()));
+                  }),
+                  _quickActionCard(Icons.travel_explore, 'Tracking Surat', 'Lacak posisi surat', Colors.green, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const TrackingPage()));
+                  }),
+                  _quickActionCard(Icons.inbox, 'Surat Masuk', 'Lihat surat masuk', Colors.deepPurple, () {}),
+                  _quickActionCard(Icons.send, 'Surat Keluar', 'Lihat surat keluar', Colors.orange, () {}),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const SectionHeader(title: 'Statistik'),
+              const SizedBox(height: 8),
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: 2.5,
+                children: [
+                  _statCard('Surat Masuk', '1', Icons.inbox, Colors.blue, Colors.blue),
+                  _statCard('Surat Keluar', '1', Icons.send, Colors.orange, Colors.orange),
+                  _statCard('Pending', '1', Icons.watch_later, Colors.amber, Colors.amber),
+                  _statCard('Selesai', '1', Icons.check_circle, Colors.green, Colors.green),
+                ],
+              ),
+              const SizedBox(height: 24),
+              const SectionHeader(title: '📂 Surat Terbaru', actionLabel: 'Lihat Semua', onAction: null),
+              const SizedBox(height: 8),
+              Column(
+                children: suratList.map((s) => SuratCard(surat: s)).toList(),
+              ),
+              const SizedBox(height: 80),
+            ],
           ),
-        ],
-      ),
-      body: StreamBuilder<List<Surat>>(
-        stream: _db.getSuratList(),
-        builder: (context, snapshot) {
-          final suratList = snapshot.data ?? [];
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Aksi Cepat', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 2.8,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _quickActionCard(
-                      Icons.add, 'Tambah Surat', 'Buat surat baru', Colors.blue, () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditSuratPage()));
-                      }
-                    ),
-                    //  2. LOGIKA NAVIGASI DITAMBAHKAN DI SINI
-                    _quickActionCard(
-                      Icons.travel_explore, 'Tracking Surat', 'Lacak posisi surat', Colors.green, () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const TrackingPage()));
-                      }
-                    ),
-                    _quickActionCard(
-                      Icons.inbox, 'Surat Masuk', 'Lihat kotak masuk', Colors.deepPurple, () {}
-                    ),
-                    _quickActionCard(
-                      Icons.send, 'Surat Keluar', 'Kirim surat', Colors.orange, () {}
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                const SectionHeader(title: 'Statistik'),
-                const SizedBox(height: 8),
-                GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 2.5,
-                  children: [
-                    _statCard('Surat Masuk', '1', Icons.inbox, Colors.blue, Colors.blue),
-                    _statCard('Surat Keluar', '1', Icons.send, Colors.orange, Colors.orange),
-                    _statCard('Pending', '1', Icons.watch_later, Colors.amber, Colors.amber),
-                    _statCard('Selesai', '1', Icons.check_circle, Colors.green, Colors.green),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                const SectionHeader(title: ' Surat Terbaru', actionLabel: 'Lihat Semua', onAction: null),
-                const SizedBox(height: 8),
-                Column(
-                  children: suratList.map((s) => SuratCard(surat: s)).toList(),
-                ),
-                const SizedBox(height: 80),
-              ],
-            ),
-          );
-        },
-      ),
-
-      bottomNavigationBar: _buildBottomNav(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditSuratPage()));
-        },
-        backgroundColor: primaryBlue,
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        );
+      },
     );
   }
-
+  
+  // Helper widgets dipindahkan ke sini agar tetap bisa diakses
   Widget _quickActionCard(IconData icon, String title, String subtitle, Color color, VoidCallback? onTap) {
     return InkWell(
       onTap: onTap,
@@ -194,19 +134,85 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
 
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: (i) => setState(() => _selectedIndex = i),
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: const Color(0xFF8E24AA),
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-        BottomNavigationBarItem(icon: Icon(Icons.article_outlined), label: 'Surat'),
-        BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: 'Notifikasi'),
-        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
-      ],
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+  static const Color accentPurpleA = Color(0xFF8E24AA);
+
+  // DIUBAH: Daftar semua halaman untuk BottomNavBar
+  static const List<Widget> _pages = <Widget>[
+    BerandaContent(), // Halaman Beranda (0)
+    SuratRangkumanPage(), // Halaman Surat (1)
+    Center(child: Text('Halaman Notifikasi')), // Halaman Notifikasi (2)
+    Center(child: Text('Halaman Profil')), // Halaman Profil (3)
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: accentPurpleA, borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.description, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+              Text('mailingroom', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text('Kelola surat masuk dan keluar', style: TextStyle(fontSize: 12, color: Colors.black54)),
+            ]),
+          ],
+        ),
+        actions: [
+          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: CircleAvatar(backgroundColor: accentPurpleA, child: const Icon(Icons.person, color: Colors.white)),
+          ),
+        ],
+      ),
+      // DIUBAH: Body sekarang menampilkan halaman berdasarkan _selectedIndex
+      body: _pages.elementAt(_selectedIndex),
+
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF8E24AA),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+          BottomNavigationBarItem(icon: Icon(Icons.article_outlined), label: 'Surat'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: 'Notifikasi'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+        ],
+      ),
+
+      // DIUBAH: Tombol + hanya muncul di halaman Beranda
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditSuratPage()));
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
