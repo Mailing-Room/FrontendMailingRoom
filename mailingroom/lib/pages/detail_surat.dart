@@ -9,13 +9,13 @@ class DetailSuratPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryColor = Colors.blue.shade700;
-    final Color accentColor = Colors.orange.shade400;
+    const Color posBlue = Color(0xFF00529C);
+    const Color posOrange = Color(0xFFF37021);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail Surat'),
-        backgroundColor: primaryColor,
+        backgroundColor: posBlue,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -35,39 +35,69 @@ class DetailSuratPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Card(
           elevation: 4,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: ListView(
               children: [
                 Text(surat.perihal,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+
+                // ✅ BAGIAN INI DIPERBAIKI DENGAN LEBIH BAIK
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Nomor: ${surat.nomor}", style: const TextStyle(fontSize: 16)),
-                    Chip(
-                      label: Text(surat.status),
-                      backgroundColor: surat.status == 'Terkirim'
-                          ? Colors.green.shade200
-                          : accentColor.withOpacity(0.3),
+                    // 1. Text nomor surat tetap fleksibel dengan Expanded
+                    Expanded(
+                      child: Text(
+                        "Nomor: ${surat.nomor}",
+                        style: const TextStyle(
+                            fontSize: 16, color: Colors.black54),
+                        // overflow: TextOverflow.ellipsis, // Opsi jika nomor sangat panjang
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // 2. Chip status juga dibuat fleksibel agar bisa mengecil jika perlu
+                    Flexible(
+                      child: Chip(
+                        label: Text(
+                          surat.status,
+                          overflow: TextOverflow
+                              .ellipsis, // Tampilkan '...' jika teks status terlalu panjang
+                        ),
+                        backgroundColor:
+                            surat.status.toLowerCase() == 'terkirim'
+                                ? Colors.green.shade100
+                                : posOrange.withOpacity(0.2),
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: surat.status.toLowerCase() == 'terkirim'
+                              ? Colors.green.shade800
+                              : posOrange,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
                     ),
                   ],
                 ),
+
                 const Divider(height: 30),
                 _buildDetailItem('Deskripsi', surat.deskripsiSurat),
                 _buildDetailItem('Sifat Surat', surat.sifatSurat),
                 _buildDetailItem('Jenis Surat', surat.jenisSurat),
-                _buildDetailItem('Tanggal', surat.tanggal),
+                _buildDetailItem('Tanggal', surat.tanggal.split('T').first),
                 const SizedBox(height: 20),
-                _buildSection('📤 Pengirim', {
+                _buildSection('📤 Pengirim', posBlue, {
                   'Asal': surat.pengirimAsal,
                   'Divisi': surat.pengirimDivisi,
                   'Departemen': surat.pengirimDepartemen,
                 }),
                 const SizedBox(height: 20),
-                _buildSection('📥 Penerima', {
+                _buildSection('📥 Penerima', posBlue, {
                   'Tujuan': surat.penerimaTujuan,
                   'Divisi': surat.penerimaDivisi,
                   'Departemen': surat.penerimaDepartemen,
@@ -82,22 +112,30 @@ class DetailSuratPage extends StatelessWidget {
 
   Widget _buildDetailItem(String label, String? value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("$label: ", style: const TextStyle(fontWeight: FontWeight.bold)),
+          SizedBox(
+            width: 100,
+            child: Text("$label:",
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.black54)),
+          ),
           Expanded(child: Text(value ?? '-')),
         ],
       ),
     );
   }
 
-  Widget _buildSection(String title, Map<String, String?> data) {
+  Widget _buildSection(
+      String title, Color titleColor, Map<String, String?> data) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
+            style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.bold, color: titleColor)),
         const SizedBox(height: 8),
         ...data.entries.map((e) => _buildDetailItem(e.key, e.value)).toList(),
       ],

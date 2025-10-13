@@ -5,7 +5,8 @@ import 'models/user.dart';
 import 'providers/surat_provider.dart';
 import 'pages/home_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -22,7 +23,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<MyUser?>.value(
-          value: MyUser(uid: 'user_id_dummy', email: 'pengirim@mailingroom.com', role: 'user'),
+          value: MyUser(
+              uid: 'user_id_dummy',
+              email: 'pengirim@mailingroom.com',
+              role: 'user'),
         ),
         ChangeNotifierProvider(create: (_) => SuratProvider()),
       ],
@@ -38,7 +42,8 @@ class MyApp extends StatelessWidget {
             backgroundColor: Colors.white,
             foregroundColor: Colors.black87,
           ),
-          colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.blue).copyWith(
+          colorScheme:
+              ColorScheme.fromSwatch(primarySwatch: Colors.blue).copyWith(
             secondary: accentOrange,
           ),
         ),
