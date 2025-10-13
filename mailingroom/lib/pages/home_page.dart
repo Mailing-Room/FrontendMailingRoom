@@ -6,7 +6,7 @@ import 'add_edit_surat_pages.dart';
 import 'notifikasi_page.dart';
 import 'profil_page.dart';
 import 'surat_rangkuman_page.dart';
-import 'tracking_page.dart';
+import 'tracking_page.dart' hide Surat;
 import '../widgets/section_header.dart';
 import '../widgets/surat_card.dart';
 import '../services/database_service.dart';
@@ -46,8 +46,9 @@ class BerandaContent extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _quickActionCard(Icons.add, 'Tambah Surat', 'Buat surat baru',
-                      posOrange, () {
+                  _quickActionCard(
+                      Icons.add, 'Tambah Surat', 'Buat surat baru', posOrange,
+                      () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -64,12 +65,13 @@ class BerandaContent extends StatelessWidget {
                       ),
                     );
                   }),
-                  _quickActionCard(Icons.inbox, 'Surat Masuk', 'Lihat kotak masuk',
-                      posBlue, () {
+                  _quickActionCard(
+                      Icons.inbox, 'Surat Masuk', 'Lihat kotak masuk', posBlue,
+                      () {
                     onNavigateToTab(1, subTabIndex: 0);
                   }),
-                  _quickActionCard(Icons.send, 'Surat Keluar', 'Kirim surat',
-                      posOrange, () {
+                  _quickActionCard(
+                      Icons.send, 'Surat Keluar', 'Kirim surat', posOrange, () {
                     onNavigateToTab(1, subTabIndex: 1);
                   }),
                 ],
@@ -86,7 +88,8 @@ class BerandaContent extends StatelessWidget {
                 childAspectRatio: 2.5,
                 children: [
                   _statCard('Surat Masuk', '1', Icons.inbox, posBlue, posBlue),
-                  _statCard('Surat Keluar', '1', Icons.send, posOrange, posOrange),
+                  _statCard(
+                      'Surat Keluar', '1', Icons.send, posOrange, posOrange),
                   _statCard('Pending', '1', Icons.watch_later, Colors.amber,
                       Colors.amber),
                   _statCard('Selesai', '1', Icons.check_circle, Colors.green,
@@ -143,7 +146,8 @@ class BerandaContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text(subtitle,
                     style:
                         const TextStyle(fontSize: 12, color: Colors.black54)),
@@ -253,8 +257,8 @@ class _HomePageState extends State<HomePage> {
         title: _selectedIndex == 0
             ? const Text(
                 'mailingroom',
-                style: TextStyle(
-                    color: Colors.black, fontWeight: FontWeight.bold),
+                style:
+                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
               )
             : Text(appBarTitle),
         actions: [
