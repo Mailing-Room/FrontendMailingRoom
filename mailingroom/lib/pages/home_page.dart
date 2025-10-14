@@ -56,7 +56,7 @@ class BerandaContent extends StatelessWidget {
 
     final List<QuickAction> actions = [
       QuickAction(
-        title: 'Tambah Surat', subtitle: 'Buat surat baru', icon: Icons.add_circle_outline,
+        title: 'Kirim Surat', subtitle: 'Kirim surat baru', icon: Icons.add_circle_outline,
         color1: const Color(0xFFF37021), color2: const Color(0xFFFF9A57),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditSuratPage())),
       ),
@@ -97,7 +97,7 @@ class BerandaContent extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
-                    childAspectRatio: 2.1, // Disesuaikan agar lebih ringkas
+                    childAspectRatio: 2.1,
                   ),
                   itemCount: actions.length,
                   shrinkWrap: true,
@@ -130,7 +130,7 @@ class BerandaContent extends StatelessWidget {
                 mainAxisSpacing: 16,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 2.0, // Disesuaikan agar lebih ringkas
+                childAspectRatio: 1.8, // Sedikit disesuaikan untuk memberi ruang
                 children: [
                   _statCard('Surat Masuk', '1', posBlue),
                   _statCard('Surat Keluar', '1', posOrange),
@@ -162,7 +162,6 @@ class BerandaContent extends StatelessWidget {
     );
   }
 
-  // WIDGET KARTU AKSI CEPAT DENGAN UKURAN LEBIH KECIL
   Widget _quickActionCard(IconData icon, String title, String subtitle, Color color1, Color color2, VoidCallback? onTap) {
     return InkWell(
       onTap: onTap,
@@ -224,7 +223,7 @@ class BerandaContent extends StatelessWidget {
     );
   }
 
-  // WIDGET KARTU STATISTIK DENGAN UKURAN LEBIH KECIL
+  // WIDGET KARTU STATISTIK DENGAN PERBAIKAN OVERFLOW
   Widget _statCard(String title, String value, Color indicatorColor) {
     return Container(
       decoration: BoxDecoration(
@@ -252,27 +251,35 @@ class BerandaContent extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: indicatorColor,
+          Expanded( // Menggunakan Expanded agar Padding mengisi sisa ruang
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0), // Padding disesuaikan
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center, // Pusatkan konten secara vertikal
+                children: [
+                  // FittedBox akan secara otomatis mengecilkan teks agar pas
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      value,
+                      style: GoogleFonts.inter(
+                        fontSize: 26, // Ukuran font awal, akan mengecil jika perlu
+                        fontWeight: FontWeight.bold,
+                        color: indicatorColor,
+                      ),
+                      maxLines: 1,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  title,
-                  style: GoogleFonts.inter(color: Colors.black54, fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(color: Colors.black54, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -280,6 +287,10 @@ class BerandaContent extends StatelessWidget {
     );
   }
 }
+
+//====================================================================//
+//                HALAMAN UTAMA (STATEFUL WIDGET SHELL)                 //
+//====================================================================//
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

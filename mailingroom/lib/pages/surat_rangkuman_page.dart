@@ -1,6 +1,8 @@
-// Path: lib/pages/surat_rangkuman_page.dart
+// lib/pages/surat_rangkuman_page.dart
+
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart'; // Impor package animasi
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mailingroom/services/database_service.dart';
 import 'package:mailingroom/widgets/surat_card.dart';
 import '../models/surat.dart';
@@ -16,45 +18,59 @@ class SuratRangkumanPage extends StatefulWidget {
 class _SuratRangkumanPageState extends State<SuratRangkumanPage> {
   final DatabaseService _db = DatabaseService();
 
+  // Warna khas Pos Indonesia
+  final Color posOrange = const Color(0xFFF37021);
+  final Color posBlue = const Color(0xFF00529C);
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       initialIndex: widget.initialTabIndex,
       length: 2,
       child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        // Menggunakan AppBar standar, bukan NestedScrollView
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          automaticallyImplyLeading: false, // Menghilangkan tombol back
+          elevation: 1.0, // Sedikit bayangan
+          // Menempatkan TabBar di dalam bottom AppBar
+          bottom: TabBar(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            labelColor: Colors.white,
+            unselectedLabelColor: posBlue,
+            indicatorSize: TabBarIndicatorSize.tab,
+            indicator: BoxDecoration(
+              color: posBlue,
+              borderRadius: BorderRadius.circular(50),
+            ),
+            labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            unselectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+            tabs: [
+              _buildTab('Surat Masuk', Icons.inbox_outlined),
+              _buildTab('Surat Keluar', Icons.send_outlined),
+            ],
+          ),
+        ),
         body: StreamBuilder<List<Surat>>(
           stream: _db.getSuratList(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator(color: posOrange));
             }
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return _buildEmptyState(); // Tampilan kosong yang lebih baik
+              return _buildEmptyState('Belum Ada Surat', 'Semua data surat akan muncul di sini saat Anda membuatnya.');
             }
 
             final allSurat = snapshot.data!;
-            final suratMasuk = allSurat.where((s) => s.status.toLowerCase() != 'terkirim').toList();
-            final suratKeluar = allSurat.where((s) => s.status.toLowerCase() == 'terkirim').toList();
+            final suratMasuk = allSurat.where((s) => s.jenisSurat.toLowerCase() == 'masuk').toList();
+            final suratKeluar = allSurat.where((s) => s.jenisSurat.toLowerCase() == 'keluar').toList();
 
-            return Column(
+            // Langsung menampilkan TabBarView di body
+            return TabBarView(
               children: [
-                const TabBar(
-                  labelColor: Color(0xFF00529C), // Warna Pos Indonesia
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Color(0xFF00529C),
-                  tabs: [
-                    Tab(text: 'Surat Masuk'),
-                    Tab(text: 'Surat Keluar'),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _buildSuratList(suratMasuk),
-                      _buildSuratList(suratKeluar),
-                    ],
-                  ),
-                ),
+                _buildSuratList(suratMasuk),
+                _buildSuratList(suratKeluar),
               ],
             );
           },
@@ -63,54 +79,70 @@ class _SuratRangkumanPageState extends State<SuratRangkumanPage> {
     );
   }
 
-  // Widget untuk tampilan saat tidak ada data
-  Widget _buildEmptyState() {
+  Tab _buildTab(String title, IconData icon) {
+    return Tab(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 8),
+          Text(title),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String title, String message) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.mark_email_unread_outlined, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
+          Image.asset('assets/images/pos_empty_box.png', height: 150, errorBuilder: (c, e, s) => Icon(Icons.mark_email_unread_outlined, size: 80, color: Colors.grey[300])),
+          const SizedBox(height: 24),
           Text(
-            'Tidak Ada Surat',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[400]),
+            title,
+            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: posBlue),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Semua data surat akan muncul di sini.',
-            style: TextStyle(color: Colors.grey[400]),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40.0),
+            child: Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(color: Colors.grey[600]),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Widget untuk membangun daftar surat dengan fitur interaktif
   Widget _buildSuratList(List<Surat> suratList) {
     if (suratList.isEmpty) {
-      return _buildEmptyState(); // Gunakan tampilan kosong yang baru
+      return _buildEmptyState('Belum Ada Surat', 'Data untuk kategori ini akan muncul di sini.');
     }
 
     return RefreshIndicator(
       onRefresh: () async {
-        // Aksi saat ditarik untuk refresh.
-        // Karena kita pakai StreamBuilder, data akan otomatis update.
-        // Kita hanya perlu menunggu sejenak untuk menampilkan indikator.
         await Future.delayed(const Duration(seconds: 1));
       },
+      color: posOrange,
       child: AnimationLimiter(
         child: ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
           itemCount: suratList.length,
           itemBuilder: (context, index) {
             final surat = suratList[index];
             return AnimationConfiguration.staggeredList(
               position: index,
-              duration: const Duration(milliseconds: 375),
+              duration: const Duration(milliseconds: 400),
               child: SlideAnimation(
                 verticalOffset: 50.0,
                 child: FadeInAnimation(
-                  child: SuratCard(surat: surat),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: SuratCard(surat: surat),
+                  ),
                 ),
               ),
             );

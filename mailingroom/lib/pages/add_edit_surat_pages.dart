@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart'; // ✅ Tambahkan ini
+import 'package:file_picker/file_picker.dart';
+import 'package:google_fonts/google_fonts.dart'; // Menggunakan Google Fonts
+
 import '../models/surat.dart';
-// import '../services/database_service.dart';
+// import '../services/database_service.dart'; // Uncomment jika sudah siap integrasi database
 
 class AddEditSuratPage extends StatefulWidget {
   final Surat? surat;
@@ -18,11 +20,13 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
   // Warna khas Pos Indonesia
   final Color posOrange = const Color(0xFFF37021);
   final Color posBlue = const Color(0xFF00529C);
+  final Color lightGrey = const Color(0xFFF0F0F0); // Warna abu-abu terang untuk background input
 
   final _formKey = GlobalKey<FormState>();
 
   File? _fileSurat;
   File? _fileLP;
+  bool _isLoading = false; // State untuk indikator loading
 
   late TextEditingController nomorController;
   late TextEditingController perihalController;
@@ -109,7 +113,19 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
   }
 
   void _saveForm() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return; // Mencegah multiple tap saat loading
+
+    bool isJenisValid = _selectedJenisSurat != null;
+    bool isSifatValid = _selectedSifatSurat != null;
+
+    if (!_formKey.currentState!.validate() || !isJenisValid || !isSifatValid) {
+        if (!isJenisValid || !isSifatValid) {
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Harap lengkapi semua pilihan jenis dan sifat surat!')),
+            );
+        }
+        return;
+    }
 
     if (_fileSurat == null || _fileLP == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -119,182 +135,312 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
       return;
     }
 
-    final suratData = Surat(
-      id: widget.isEdit ? widget.surat!.id : null,
-      nomor: nomorController.text,
-      perihal: perihalController.text,
-      deskripsiSurat: deskripsiController.text,
-      penerimaTujuan: penerimaController.text,
-      pengirimAsal: pengirimAsalController.text,
-      pengirimDivisi: pengirimDivisiController.text,
-      pengirimDepartemen: pengirimDepartemenController.text,
-      penerimaDivisi: penerimaDivisiController.text,
-      penerimaDepartemen: penerimaDepartemenController.text,
-      jenisSurat: _selectedJenisSurat!,
-      sifatSurat: _selectedSifatSurat!,
-      berat: double.tryParse(beratController.text) ?? 0.0,
-      status: widget.isEdit ? widget.surat!.status : 'Baru',
-      tanggal: widget.isEdit
-          ? widget.surat!.tanggal
-          : DateTime.now().toIso8601String(),
-    );
+    setState(() {
+      _isLoading = true; // Set loading saat proses penyimpanan
+    });
 
-    // TODO: Upload ke Firebase Storage, simpan ke database nanti
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(widget.isEdit
-                ? 'Surat berhasil diperbarui!'
-                : 'Surat berhasil disimpan!')),
+    try {
+      final suratData = Surat(
+        id: widget.isEdit ? widget.surat!.id : null,
+        nomor: nomorController.text,
+        perihal: perihalController.text,
+        deskripsiSurat: deskripsiController.text,
+        penerimaTujuan: penerimaController.text,
+        pengirimAsal: pengirimAsalController.text,
+        pengirimDivisi: pengirimDivisiController.text,
+        pengirimDepartemen: pengirimDepartemenController.text,
+        penerimaDivisi: penerimaDivisiController.text,
+        penerimaDepartemen: penerimaDepartemenController.text,
+        jenisSurat: _selectedJenisSurat!,
+        sifatSurat: _selectedSifatSurat!,
+        berat: double.tryParse(beratController.text) ?? 0.0,
+        status: widget.isEdit ? widget.surat!.status : 'Baru',
+        tanggal: widget.isEdit
+            ? widget.surat!.tanggal
+            : DateTime.now().toIso8601String(),
       );
-      Navigator.pop(context);
+
+      // TODO: Implementasi logika upload ke Firebase Storage dan simpan ke database
+      // Contoh: await DatabaseService().addOrUpdateSurat(suratData);
+      // Untuk simulasi, kita pakai delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(widget.isEdit
+                  ? 'Surat berhasil diperbarui!'
+                  : 'Surat berhasil disimpan!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan surat: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // Nonaktifkan loading setelah proses selesai
+        });
+      }
     }
   }
 
-  Widget _buildSectionTitle(String title) {
+  // Widget helper untuk judul seksi
+  Widget _buildSectionTitle(String title, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.only(top: 24.0, bottom: 8.0),
-      child: Text(
-        title,
-        style: TextStyle(
-            fontSize: 18, fontWeight: FontWeight.bold, color: posBlue),
+      padding: const EdgeInsets.only(top: 28.0, bottom: 8.0),
+      child: Row(
+        children: [
+          Icon(icon, color: posOrange, size: 24),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+                fontSize: 19, fontWeight: FontWeight.bold, color: posBlue),
+          ),
+        ],
       ),
     );
   }
+
+  // Widget helper untuk input field agar lebih rapi
+  Widget _buildTextField({
+      required TextEditingController controller,
+      required String label,
+      int maxLines = 1,
+      TextInputType? keyboardType,
+      bool isRequired = true,
+  }) {
+      return Padding(
+          padding: const EdgeInsets.only(top: 12.0),
+          child: TextFormField(
+              controller: controller,
+              decoration: InputDecoration(
+                  labelText: label,
+                  labelStyle: TextStyle(color: posBlue.withOpacity(0.8)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12), // Border lebih membulat
+                    borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: posOrange, width: 2), // Warna fokus oranye
+                  ),
+                  filled: true,
+                  fillColor: lightGrey, // Warna background input
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              ),
+              maxLines: maxLines,
+              keyboardType: keyboardType,
+              validator: isRequired ? (v) => v!.isEmpty ? 'Wajib diisi' : null : null,
+          ),
+      );
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA), // Background keseluruhan
       appBar: AppBar(
-        title: Text(widget.isEdit ? 'Edit Surat' : 'Tambah Surat'),
+        title: Text(widget.isEdit ? 'Edit Surat' : 'Buat Surat Baru',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 20)),
         backgroundColor: posBlue,
+        foregroundColor: Colors.white,
+        centerTitle: true,
       ),
-      body: Padding(
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: posOrange),
+                  const SizedBox(height: 16),
+                  Text('Menyimpan data surat...',
+                    style: GoogleFonts.poppins(fontSize: 16, color: posBlue)),
+                ],
+              ),
+            )
+          : Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              _buildSectionTitle('Informasi Utama'),
-              TextFormField(
+              
+              // ================= BAGIAN 1: DATA PENGIRIM =================
+              _buildSectionTitle('Data Pengirim', Icons.person_outline),
+              _buildTextField(
+                controller: pengirimAsalController,
+                label: 'Asal Pengirim',
+              ),
+              _buildTextField(
+                controller: pengirimDivisiController,
+                label: 'Divisi Pengirim',
+              ),
+              _buildTextField(
+                controller: pengirimDepartemenController,
+                label: 'Departemen Pengirim',
+              ),
+
+              // ================= BAGIAN 2: DATA PENERIMA =================
+              _buildSectionTitle('Data Penerima', Icons.people_outline),
+              _buildTextField(
+                controller: penerimaController,
+                label: 'Tujuan Penerima',
+              ),
+              _buildTextField(
+                controller: penerimaDivisiController,
+                label: 'Divisi Penerima',
+              ),
+              _buildTextField(
+                controller: penerimaDepartemenController,
+                label: 'Departemen Penerima',
+              ),
+
+              // ================= BAGIAN 3: DATA SURAT =================
+              _buildSectionTitle('Detail Surat', Icons.article_outlined),
+              _buildTextField(
                 controller: nomorController,
-                decoration: const InputDecoration(labelText: 'Nomor Surat'),
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                label: 'Nomor Surat',
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              _buildTextField(
                 controller: perihalController,
-                decoration: const InputDecoration(labelText: 'Perihal'),
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
+                label: 'Perihal',
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              _buildTextField(
                 controller: deskripsiController,
-                decoration: const InputDecoration(labelText: 'Deskripsi Surat'),
+                label: 'Deskripsi Surat',
                 maxLines: 3,
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
               ),
-              _buildSectionTitle('Detail Surat & Lampiran'),
-              DropdownButtonFormField<String>(
-                value: _selectedJenisSurat,
-                hint: const Text('Pilih Jenis Surat'),
-                items: _jenisSuratOptions
-                    .map((e) =>
-                        DropdownMenuItem<String>(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedJenisSurat = v),
-                validator: (v) => v == null ? 'Wajib dipilih' : null,
+              Padding(
+                padding: const EdgeInsets.only(top: 12.0),
+                child: DropdownButtonFormField<String>(
+                  value: _selectedJenisSurat,
+                  hint: Text('Pilih Jenis Surat', style: TextStyle(color: posBlue.withOpacity(0.8))),
+                  icon: Icon(Icons.arrow_drop_down, color: posOrange),
+                  decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: posOrange, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: lightGrey,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  ),
+                  items: _jenisSuratOptions
+                      .map((e) =>
+                          DropdownMenuItem<String>(value: e, child: Text(e, style: GoogleFonts.poppins())))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedJenisSurat = v),
+                  validator: (v) => v == null ? 'Wajib dipilih' : null,
+                  style: GoogleFonts.poppins(color: Colors.black87), // Style untuk teks yang dipilih
+                ),
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _selectedSifatSurat,
-                hint: const Text('Pilih Sifat Surat'),
-                items: _sifatSuratOptions
-                    .map((e) =>
-                        DropdownMenuItem<String>(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedSifatSurat = v),
-                validator: (v) => v == null ? 'Wajib dipilih' : null,
+              Padding(
+                padding: const EdgeInsets.only(top: 12.0),
+                child: DropdownButtonFormField<String>(
+                  value: _selectedSifatSurat,
+                  hint: Text('Pilih Sifat Surat', style: TextStyle(color: posBlue.withOpacity(0.8))),
+                  icon: Icon(Icons.arrow_drop_down, color: posOrange),
+                  decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: posOrange, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: lightGrey,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  ),
+                  items: _sifatSuratOptions
+                      .map((e) =>
+                          DropdownMenuItem<String>(value: e, child: Text(e, style: GoogleFonts.poppins())))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedSifatSurat = v),
+                  validator: (v) => v == null ? 'Wajib dipilih' : null,
+                  style: GoogleFonts.poppins(color: Colors.black87), // Style untuk teks yang dipilih
+                ),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
+              _buildTextField(
                 controller: beratController,
-                decoration: const InputDecoration(labelText: 'Berat (gram)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
+                label: 'Berat Surat (gram)',
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
-              const SizedBox(height: 24),
+
+              // ================= BAGIAN 4: UPLOAD FILE =================
+              _buildSectionTitle('Lampiran Dokumen', Icons.attach_file),
+              const SizedBox(height: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   OutlinedButton.icon(
                     onPressed: _pickFileSurat,
-                    icon: const Icon(Icons.upload_file),
-                    label: const Text('Lampirkan File Surat (Wajib)'),
+                    icon: Icon(Icons.file_upload, color: posOrange),
+                    label: Text('Lampirkan File Surat (Wajib)', style: GoogleFonts.poppins(color: posBlue)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: posBlue.withOpacity(0.7), width: 1.5),
+                    ),
                   ),
                   if (_fileSurat != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
-                        'File: ${_fileSurat!.path.split('/').last}',
+                        'File Surat: ${_fileSurat!.path.split('/').last}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.black54),
+                        style: GoogleFonts.poppins(color: Colors.black54, fontSize: 13),
                       ),
                     ),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(
                     onPressed: _pickFileLP,
-                    icon: const Icon(Icons.post_add),
-                    label: const Text('Lampirkan File LP (Wajib)'),
+                    icon: Icon(Icons.description_outlined, color: posOrange),
+                    label: Text('Lampirkan File LP (Wajib)', style: GoogleFonts.poppins(color: posBlue)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      side: BorderSide(color: posBlue.withOpacity(0.7), width: 1.5),
+                    ),
                   ),
                   if (_fileLP != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
-                        'File: ${_fileLP!.path.split('/').last}',
+                        'File LP: ${_fileLP!.path.split('/').last}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.black54),
+                        style: GoogleFonts.poppins(color: Colors.black54, fontSize: 13),
                       ),
                     ),
                 ],
               ),
-              _buildSectionTitle('Informasi Pengirim'),
-              TextFormField(
-                controller: pengirimAsalController,
-                decoration: const InputDecoration(labelText: 'Asal Pengirim'),
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: pengirimDivisiController,
-                decoration: const InputDecoration(labelText: 'Divisi Pengirim'),
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: pengirimDepartemenController,
-                decoration:
-                    const InputDecoration(labelText: 'Departemen Pengirim'),
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-              ),
-              _buildSectionTitle('Informasi Penerima'),
-              TextFormField(
-                controller: penerimaController,
-                decoration: const InputDecoration(labelText: 'Tujuan Penerima'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: penerimaDivisiController,
-                decoration: const InputDecoration(labelText: 'Divisi Penerima'),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: penerimaDepartemenController,
-                decoration:
-                    const InputDecoration(labelText: 'Departemen Penerima'),
-              ),
-              const SizedBox(height: 30),
+
+              // Tombol Simpan
+              const SizedBox(height: 40),
               ElevatedButton.icon(
                 onPressed: _saveForm,
                 icon: const Icon(Icons.save),
@@ -303,9 +449,13 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: posOrange,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  textStyle: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                  elevation: 5, // Memberi efek shadow
                 ),
               ),
+              const SizedBox(height: 20), // Memberi sedikit ruang di bawah
             ],
           ),
         ),
