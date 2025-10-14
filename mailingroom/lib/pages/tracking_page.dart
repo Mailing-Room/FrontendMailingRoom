@@ -1,7 +1,11 @@
-// Path: lib/pages/tracking_page.dart
-import 'package:flutter/material.dart';
+// lib/pages/tracking_page.dart
 
-// Model Surat
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:timeline_tile/timeline_tile.dart';
+import 'package:animate_do/animate_do.dart'; // Import package animasi
+
+// --- MODEL DATA (Tidak ada perubahan) ---
 class Surat {
   final String id;
   final String nomor;
@@ -42,7 +46,6 @@ class Surat {
   });
 }
 
-// Timeline Item Model
 class TimelineItem {
   final String status;
   final String tanggal;
@@ -61,6 +64,8 @@ class TimelineItem {
   });
 }
 
+// --- HALAMAN UTAMA ---
+
 class TrackingPage extends StatefulWidget {
   const TrackingPage({super.key});
 
@@ -74,7 +79,11 @@ class _TrackingPageState extends State<TrackingPage> {
   bool _showResult = false;
   Surat? _foundSurat;
 
-  // Data surat dummy
+  // Warna khas Pos Indonesia
+  final Color posOrange = const Color(0xFFF37021);
+  final Color posBlue = const Color(0xFF00529C);
+
+  // --- DATA DUMMY (Tidak ada perubahan) ---
   final List<Surat> _dummySuratList = [
     Surat(
       id: '1',
@@ -92,8 +101,8 @@ class _TrackingPageState extends State<TrackingPage> {
       penerimaDivisi: 'Keuangan',
       penerimaDepartemen: 'Accounting',
       jenisSurat: 'Masuk',
-      status: 'Menunggu Kurir',
-      tanggal: '2025-10-08',
+      status: 'Dalam Perjalanan', // Diubah untuk demo
+      tanggal: '2025-10-13',
     ),
     Surat(
       id: '2',
@@ -112,133 +121,49 @@ class _TrackingPageState extends State<TrackingPage> {
       penerimaDepartemen: 'Semua',
       jenisSurat: 'Keluar',
       status: 'Terkirim',
-      tanggal: '2025-10-07',
+      tanggal: '2025-10-14',
     ),
   ];
 
-  // Generate timeline berdasarkan status surat
+  // --- LOGIKA ---
   List<TimelineItem> _generateTimeline(Surat surat) {
+    // Logika diubah sedikit untuk demo status 'Dalam Perjalanan'
     List<TimelineItem> timeline = [];
-
-    // Timeline untuk surat masuk
     if (surat.jenisSurat == 'Masuk') {
-      timeline.add(TimelineItem(
-        status: 'Surat Dibuat',
-        tanggal: '${surat.tanggal}, 08:00',
-        lokasi: surat.pengirimAsal,
-        petugas: surat.pengirimDivisi,
-        catatan: 'Surat dibuat oleh ${surat.pengirimDepartemen}',
-        isCompleted: true,
-      ));
-
-      timeline.add(TimelineItem(
-        status: 'Diverifikasi',
-        tanggal: '${surat.tanggal}, 09:30',
-        lokasi: 'Mail Room',
-        petugas: 'Admin Mail Room',
-        catatan: 'Surat telah diverifikasi dan dicatat',
-        isCompleted: true,
-      ));
-
-      if (surat.status == 'Menunggu Kurir') {
-        timeline.add(TimelineItem(
-          status: 'Menunggu Kurir',
-          tanggal: '${surat.tanggal}, 10:00',
-          lokasi: 'Mail Room',
-          petugas: 'Waiting Assignment',
-          catatan: 'Surat menunggu pengambilan oleh kurir',
-          isCompleted: false,
-        ));
-
-        timeline.add(TimelineItem(
-          status: 'Dalam Perjalanan',
-          tanggal: '-',
-          lokasi: '-',
-          petugas: '-',
-          catatan: 'Belum diproses',
-          isCompleted: false,
-        ));
-
-        timeline.add(TimelineItem(
-          status: 'Diterima',
-          tanggal: '-',
-          lokasi: surat.penerimaDivisi,
-          petugas: '-',
-          catatan: 'Belum diterima',
-          isCompleted: false,
-        ));
-      }
+      timeline.add(TimelineItem(status: 'Surat Dibuat', tanggal: '${surat.tanggal}, 08:00', lokasi: surat.pengirimAsal, petugas: surat.pengirimDivisi, catatan: 'Surat dibuat oleh ${surat.pengirimDepartemen}', isCompleted: true));
+      timeline.add(TimelineItem(status: 'Diverifikasi', tanggal: '${surat.tanggal}, 09:30', lokasi: 'Mail Room', petugas: 'Admin Mail Room', catatan: 'Surat telah diverifikasi dan dicatat', isCompleted: true));
+      
+      bool inTransit = surat.status == 'Dalam Perjalanan';
+      timeline.add(TimelineItem(status: 'Dalam Perjalanan', tanggal: inTransit ? '${surat.tanggal}, 11:00' : '-', lokasi: inTransit ? 'Sortir Jakarta Utara' : '-', petugas: inTransit ? 'Kurir Express' : '-', catatan: inTransit ? 'Menuju lokasi penerima' : 'Belum diproses', isCompleted: inTransit));
+      timeline.add(TimelineItem(status: 'Diterima', tanggal: '-', lokasi: surat.penerimaDivisi, petugas: '-', catatan: 'Belum diterima', isCompleted: false));
     }
-
-    // Timeline untuk surat keluar
     if (surat.jenisSurat == 'Keluar') {
-      timeline.add(TimelineItem(
-        status: 'Surat Dibuat',
-        tanggal: '${surat.tanggal}, 08:00',
-        lokasi: surat.pengirimDivisi,
-        petugas: surat.pengirimDepartemen,
-        catatan: 'Surat dibuat dan diajukan',
-        isCompleted: true,
-      ));
-
-      timeline.add(TimelineItem(
-        status: 'Diverifikasi',
-        tanggal: '${surat.tanggal}, 09:15',
-        lokasi: 'Sekretariat',
-        petugas: 'Admin Sekretariat',
-        catatan: 'Surat telah diverifikasi',
-        isCompleted: true,
-      ));
-
-      timeline.add(TimelineItem(
-        status: 'Dikirim',
-        tanggal: '${surat.tanggal}, 10:30',
-        lokasi: 'Mail Room',
-        petugas: 'Kurir Internal',
-        catatan: 'Surat dalam pengiriman',
-        isCompleted: true,
-      ));
-
+      timeline.add(TimelineItem(status: 'Surat Dibuat', tanggal: '${surat.tanggal}, 08:00', lokasi: surat.pengirimDivisi, petugas: surat.pengirimDepartemen, catatan: 'Surat dibuat dan diajukan', isCompleted: true));
+      timeline.add(TimelineItem(status: 'Diverifikasi', tanggal: '${surat.tanggal}, 09:15', lokasi: 'Sekretariat', petugas: 'Admin Sekretariat', catatan: 'Surat telah diverifikasi', isCompleted: true));
+      timeline.add(TimelineItem(status: 'Dikirim', tanggal: '${surat.tanggal}, 10:30', lokasi: 'Mail Room', petugas: 'Kurir Internal', catatan: 'Surat dalam pengiriman', isCompleted: true));
       if (surat.status == 'Terkirim') {
-        timeline.add(TimelineItem(
-          status: 'Terkirim',
-          tanggal: '${surat.tanggal}, 14:00',
-          lokasi: surat.penerimaDivisi,
-          petugas: 'Penerima',
-          catatan: 'Surat telah diterima tujuan',
-          isCompleted: true,
-        ));
+        timeline.add(TimelineItem(status: 'Terkirim', tanggal: '${surat.tanggal}, 14:00', lokasi: surat.penerimaDivisi, petugas: 'Penerima', catatan: 'Surat telah diterima tujuan', isCompleted: true));
       }
     }
-
     return timeline;
   }
-
+  
   void _searchSurat() {
+    // ... (Logika search tidak berubah)
     if (_searchController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Masukkan nomor surat terlebih dahulu'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Masukkan nomor surat terlebih dahulu'), backgroundColor: Colors.red[600]));
       return;
     }
-
-    setState(() {
-      _isSearching = true;
-      _showResult = false;
-    });
-
-    // Simulasi loading - cari surat berdasarkan nomor
+    setState(() { _isSearching = true; _showResult = false; });
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         final searchQuery = _searchController.text.trim();
-        final foundSurat = _dummySuratList.firstWhere(
-          (surat) => surat.nomor.toLowerCase() == searchQuery.toLowerCase(),
-          orElse: () => _dummySuratList.first, // Default ke surat pertama jika tidak ditemukan
-        );
-
+        Surat? foundSurat;
+        try {
+          foundSurat = _dummySuratList.firstWhere((surat) => surat.nomor.toLowerCase() == searchQuery.toLowerCase());
+        } catch (e) {
+          foundSurat = null;
+        }
         setState(() {
           _foundSurat = foundSurat;
           _isSearching = false;
@@ -248,507 +173,245 @@ class _TrackingPageState extends State<TrackingPage> {
     });
   }
 
+  // --- (Fungsi _getStatusColor & _getSifatColor tidak berubah) ---
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'terkirim':
-      case 'diterima':
-        return Colors.green;
-      case 'menunggu kurir':
-      case 'dalam perjalanan':
-        return Colors.orange;
-      case 'pending':
-        return Colors.grey;
-      default:
-        return Colors.blue;
+      case 'terkirim': case 'diterima': return Colors.green.shade600;
+      case 'menunggu kurir': case 'dalam perjalanan': return Colors.orange.shade600;
+      case 'pending': return Colors.grey.shade600;
+      default: return posBlue;
     }
   }
 
   Color _getSifatColor(String sifat) {
     switch (sifat.toLowerCase()) {
-      case 'penting':
-      case 'sangat penting':
-        return Colors.red;
-      case 'segera':
-        return Colors.orange;
-      case 'biasa':
-      default:
-        return Colors.blue;
+      case 'penting': return Colors.red.shade600;
+      case 'segera': return posOrange;
+      default: return Colors.blue.shade600;
     }
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // --- UI WIDGETS ---
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Lacak Surat'),
-        backgroundColor: Colors.green,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Search Section
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      labelText: 'Masukkan Nomor Surat',
-                      hintText: 'Contoh: 123/PKS/X/2025',
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.article_outlined),
-                      suffixIcon: IconButton(
-                        icon: _isSearching
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.search),
-                        onPressed: _isSearching ? null : _searchSurat,
-                      ),
-                    ),
-                    onSubmitted: (_) => _searchSurat(),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Contoh nomor surat: 123/PKS/X/2025 atau 321/ED/X/2025',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _isSearching ? null : _searchSurat,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: _isSearching
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Lacak Sekarang',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Empty State
-            if (!_showResult && !_isSearching)
-              Container(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 40),
-                    Icon(
-                      Icons.search_off,
-                      size: 80,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Hasil pelacakan akan muncul di sini',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Masukkan nomor surat untuk melacak status pengiriman',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-
-            // Result Section
-            if (_showResult && _foundSurat != null) ...[
-              const SizedBox(height: 8),
-
-              // Detail Surat Card
-              Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            _foundSurat!.jenisSurat == 'Masuk'
-                                ? Icons.call_received
-                                : Icons.call_made,
-                            color: Colors.green,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _foundSurat!.nomor,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(_foundSurat!.status),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      _foundSurat!.status,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getSifatColor(_foundSurat!.sifatSurat),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      _foundSurat!.sifatSurat,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    _buildDetailRow(
-                      icon: Icons.subject,
-                      label: 'Perihal',
-                      value: _foundSurat!.perihal,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      icon: Icons.description_outlined,
-                      label: 'Deskripsi',
-                      value: _foundSurat!.deskripsiSurat,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      icon: Icons.business,
-                      label: 'Pengirim',
-                      value: '${_foundSurat!.pengirimAsal} - ${_foundSurat!.pengirimDivisi}',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      icon: Icons.place,
-                      label: 'Tujuan',
-                      value: '${_foundSurat!.penerimaDivisi} - ${_foundSurat!.penerimaDepartemen}',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      icon: Icons.calendar_today,
-                      label: 'Tanggal',
-                      value: _foundSurat!.tanggal,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      icon: Icons.scale,
-                      label: 'Berat',
-                      value: '${_foundSurat!.berat} gram',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDetailRow(
-                      icon: Icons.category,
-                      label: 'Jenis Surat',
-                      value: _foundSurat!.jenisSurat,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Timeline Section
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Riwayat Perjalanan Surat',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ..._buildTimeline(_foundSurat!),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
+      backgroundColor: Colors.grey[100],
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(),
+          SliverToBoxAdapter(
+            child: _isSearching
+                ? _buildLoadingIndicator()
+                : _showResult
+                    ? (_foundSurat != null ? _buildResultContent() : _buildNotFoundContent())
+                    : _buildEmptyState(),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDetailRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  SliverAppBar _buildSliverAppBar() {
+    return SliverAppBar(
+      backgroundColor: posBlue,
+      foregroundColor: Colors.white,
+      pinned: true,
+      expandedHeight: 260.0,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+        title: Text(
+          'Lacak Kiriman Surat',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [posBlue, posBlue.withOpacity(0.7)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Stack(
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+              Positioned(
+                top: 50,
+                left: 20,
+                child: Row(
+                  children: [
+                    Image.asset('assets/images/POSIND_2023.svg.png', height: 25), // GANTI DENGAN LOGO POS PUTIH ANDA
+                    const SizedBox(width: 10),
+                    Text("POS IND", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24))
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 110.0),
+                child: _buildSearchCard(),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 
-  List<Widget> _buildTimeline(Surat surat) {
-    List<Widget> timelineWidgets = [];
-    List<TimelineItem> timeline = _generateTimeline(surat);
-
-    for (int i = 0; i < timeline.length; i++) {
-      timelineWidgets.add(
-        _buildTimelineItem(
-          item: timeline[i],
-          isLast: i == timeline.length - 1,
-        ),
-      );
-    }
-
-    return timelineWidgets;
+  Widget _buildSearchCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Masukkan Nomor Surat...',
+              hintStyle: GoogleFonts.poppins(color: Colors.grey[500]),
+              prefixIcon: Icon(Icons.qr_code_scanner, color: posBlue),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            ),
+            onSubmitted: (_) => _searchSurat(),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0).copyWith(top: 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isSearching ? null : _searchSurat,
+                icon: const Icon(Icons.search, size: 20),
+                label: Text('Lacak Kiriman', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: posOrange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildTimelineItem({
-    required TimelineItem item,
-    required bool isLast,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 50),
+          // Ganti dengan gambar ilustrasi Anda
+          Image.asset('assets/images/kurir.png', height: 180, errorBuilder: (context, error, stackTrace) => Icon(Icons.local_shipping_outlined, size: 120, color: Colors.grey[300])), 
+          const SizedBox(height: 24),
+          Text(
+            'Selamat Datang di Lacak Kiriman',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: posBlue),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Masukkan nomor surat pada kolom di atas untuk melihat status dan riwayat perjalanan kiriman Anda.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 100),
+      child: Center(
+        child: Column(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: item.isCompleted ? Colors.green : Colors.grey[300],
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: item.isCompleted ? Colors.green : Colors.grey[400]!,
-                  width: 3,
-                ),
-              ),
-              child: item.isCompleted
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 18,
-                    )
-                  : null,
-            ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 60,
-                color: item.isCompleted ? Colors.green : Colors.grey[300],
-              ),
+            CircularProgressIndicator(color: posOrange),
+            const SizedBox(height: 16),
+            Text('Mencari surat...', style: GoogleFonts.poppins(fontSize: 16, color: posBlue)),
           ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+    );
+  }
+
+  Widget _buildNotFoundContent() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 50),
+          Icon(Icons.search_off_rounded, size: 100, color: Colors.grey[300]),
+          const SizedBox(height: 24),
+          Text(
+            'Kiriman Tidak Ditemukan',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: posBlue),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Nomor surat yang Anda masukkan tidak terdaftar. Mohon periksa kembali nomor surat Anda.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultContent() {
+    final List<TimelineItem> timeline = _generateTimeline(_foundSurat!);
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          _buildSuratDetailCard(),
+          const SizedBox(height: 16),
+          _buildTimelineCard(timeline),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuratDetailCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: posBlue,
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+            ),
+            child: Row(
               children: [
-                Text(
-                  item.status,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: item.isCompleted ? Colors.black87 : Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.tanggal,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: item.isCompleted ? Colors.grey[50] : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
+                Icon(Icons.article, color: Colors.white, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 16,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              item.lokasi,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: item.isCompleted ? Colors.black87 : Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 16,
-                            color: Colors.grey[600],
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              item.petugas,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
+                      Text("Nomor Surat", style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70)),
                       Text(
-                        item.catatan,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
-                        ),
+                        _foundSurat!.nomor,
+                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ],
                   ),
@@ -756,14 +419,151 @@ class _TrackingPageState extends State<TrackingPage> {
               ],
             ),
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_foundSurat!.perihal, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[800], fontWeight: FontWeight.w600)),
+                const Divider(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildInfoChip(_foundSurat!.status, _getStatusColor(_foundSurat!.status)),
+                    _buildInfoChip(_foundSurat!.sifatSurat, _getSifatColor(_foundSurat!.sifatSurat)),
+                    _buildInfoChip('${_foundSurat!.berat} gr', Colors.grey.shade600),
+                  ],
+                ),
+                const Divider(height: 24),
+                _buildDetailRow('Pengirim', '${_foundSurat!.pengirimAsal} - ${_foundSurat!.pengirimDivisi}'),
+                const SizedBox(height: 12),
+                _buildDetailRow('Penerima', '${_foundSurat!.penerimaDivisi} - ${_foundSurat!.penerimaDepartemen}'),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.bold, fontSize: 11),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+        const SizedBox(height: 2),
+        Text(value, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
       ],
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  Widget _buildTimelineCard(List<TimelineItem> timeline) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Riwayat Perjalanan',
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: posBlue),
+          ),
+          const SizedBox(height: 20),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: timeline.length,
+            itemBuilder: (context, index) {
+              final item = timeline[index];
+              final bool isCurrent = item.isCompleted && (index + 1 == timeline.length || !timeline[index + 1].isCompleted);
+              
+              return TimelineTile(
+                alignment: TimelineAlign.manual,
+                lineXY: 0.1,
+                isFirst: index == 0,
+                isLast: index == timeline.length - 1,
+                indicatorStyle: IndicatorStyle(
+                  width: 35,
+                  height: 35,
+                  indicator: Pulse(
+                    animate: isCurrent,
+                    duration: const Duration(seconds: 2),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: item.isCompleted ? posOrange : Colors.grey[300],
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isCurrent ? Icons.local_shipping : (item.isCompleted ? Icons.check : Icons.more_horiz),
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                beforeLineStyle: LineStyle(color: item.isCompleted ? posOrange : Colors.grey[300]!, thickness: 3),
+                endChild: Padding(
+                  padding: const EdgeInsets.only(left: 20, bottom: 24, top: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.status, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: item.isCompleted ? posBlue : Colors.grey[600])),
+                      const SizedBox(height: 4),
+                      Text(item.tanggal, style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600])),
+                      const SizedBox(height: 10),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: 'Lokasi: ', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black54)),
+                            TextSpan(text: item.lokasi),
+                          ],
+                          style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[800]),
+                        ),
+                      ),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: 'Petugas: ', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black54)),
+                            TextSpan(text: item.petugas),
+                          ],
+                           style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[800]),
+                        ),
+                      ),
+                       Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(text: 'Catatan: ', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black54)),
+                            TextSpan(text: item.catatan, style: const TextStyle(fontStyle: FontStyle.italic)),
+                          ],
+                           style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

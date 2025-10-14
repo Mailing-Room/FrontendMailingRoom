@@ -19,6 +19,9 @@ dependencies:
   flutter_staggered_animations: ^1.1.1
 
   file_picker: ^8.0.0
+  timeline_tile: ^2.0.0
+  animate_do: ^4.2.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +34,8 @@ flutter:
 
   assets:
     - assets/images/POSIND_2023.svg.png
+    - assets/images/kurir.png
 
-flutter_staggered_animations: ^1.1.1
+
+
   
