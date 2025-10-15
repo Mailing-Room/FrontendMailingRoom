@@ -26,11 +26,6 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging || _tabController.index != _tabController.previousIndex) {
-        setState(() {});
-      }
-    });
   }
 
   @override
@@ -61,89 +56,119 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
             'gagal': allSurat.where((s) => s.status == 'Gagal').length,
           };
 
-          final List<List<Surat>> filteredLists = [
-            allSurat.where((s) => s.status == 'Menunggu Kurir').toList(),
-            allSurat.where((s) => s.status == 'Dalam Proses').toList(),
-            allSurat.where((s) => s.status == 'Terkirim').toList(),
-          ];
+          final listMenunggu = allSurat.where((s) => s.status == 'Menunggu Kurir').toList();
+          final listProses = allSurat.where((s) => s.status == 'Dalam Proses').toList();
+          final listTerkirim = allSurat.where((s) => s.status == 'Terkirim').toList();
 
-          return CustomScrollView(
-            slivers: [
-              _buildHeader(context, 'Ahmad Kurniawan'),
-              _buildStatsGrid(stats),
-              
-              SliverToBoxAdapter(
-                child: Column(
-                  children: [
-                    _buildCustomTabBar(stats),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: allSurat.isEmpty
-                          ? _buildEmptyList('Tidak ada tugas pengiriman saat ini.')
-                          : _buildSuratList(filteredLists[_tabController.index]),
+          return NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                _buildHeader(context, 'Ahmad Kurniawan'),
+                _buildStatsGrid(stats),
+                SliverPersistentHeader(
+                  delegate: _SliverTabBarDelegate(
+                    TabBar(
+                      controller: _tabController,
+                      labelColor: posOrange,
+                      unselectedLabelColor: Colors.grey[600],
+                      indicator: BoxDecoration(
+                        color: posOrange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 13),
+                      unselectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 13),
+                      tabs: [
+                        Tab(text: 'Menunggu (${stats['menunggu'] ?? 0})'),
+                        Tab(text: 'Proses (${stats['proses'] ?? 0})'),
+                        Tab(text: 'Terkirim (${stats['terkirim'] ?? 0})'),
+                      ],
                     ),
-                    _buildSummaryCard(stats),
-                  ],
+                    backgroundColor: lightOrangeBg,
+                  ),
+                  pinned: true,
                 ),
-              ),
-            ],
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildContentBody(listMenunggu, 'Belum ada surat untuk diambil.', stats),
+                _buildContentBody(listProses, 'Tidak ada surat yang sedang dalam proses.', stats),
+                _buildContentBody(listTerkirim, 'Belum ada surat yang terkirim hari ini.', stats),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  // ✅ APPBAR DISESUAIKAN SEPERTI CONTOH
+  Widget _buildContentBody(List<Surat> suratList, String emptyMessage, Map<String, int> stats) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          suratList.isEmpty
+              ? _buildEmptyList(emptyMessage)
+              : _buildSuratList(suratList),
+          _buildSummaryCard(stats),
+        ],
+      ),
+    );
+  }
+
+  // ✅ APPBAR DIPERBAIKI AGAR SELALU RATA KIRI
   SliverAppBar _buildHeader(BuildContext context, String namaKurir) {
     return SliverAppBar(
-      backgroundColor: lightOrangeBg, // Latar belakang transparan saat di atas
+      backgroundColor: Colors.white,
       foregroundColor: Colors.black87,
       pinned: true,
-      elevation: 0, // Hilangkan shadow saat di atas
-      expandedHeight: 120, // Tinggi header keseluruhan
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.all(16),
-        centerTitle: false,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Dashboard Kurir', style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 12)),
-                Text(
-                  namaKurir,
-                  style: GoogleFonts.poppins(
-                    color: posBlue,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            CircleAvatar(
-              backgroundColor: posOrange,
-              child: const Icon(Icons.person, color: Colors.white),
-            ),
-          ],
-        ),
+      elevation: 0.5,
+      automaticallyImplyLeading: false,
+      
+      // Menggunakan 'leading' untuk logo agar posisinya pasti di kiri
+      leadingWidth: 56,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 16.0),
+        child: Image.asset('assets/images/POSIND_2023.svg.png', errorBuilder: (c,e,s) => const SizedBox()),
       ),
+      
+      // 'title' sekarang hanya berisi teks
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Mailingroom', style: GoogleFonts.poppins(color: posBlue, fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(namaKurir, style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14)),
+        ],
+      ),
+      centerTitle: false, // Memastikan title tidak ke tengah
+      titleSpacing: 12.0, // Jarak antara logo (leading) dan title
+
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16.0),
+          child: CircleAvatar(
+            backgroundColor: posOrange,
+            child: const Icon(Icons.person, color: Colors.white),
+          ),
+        ),
+      ],
     );
   }
 
   SliverToBoxAdapter _buildStatsGrid(Map<String, int> stats) {
     return SliverToBoxAdapter(
       child: Container(
-        color: lightOrangeBg, // Latar belakang sama dengan body
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
         child: GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 2.8,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
+          childAspectRatio: 2.7,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
           children: [
             _buildStatCard('Menunggu', stats['menunggu'] ?? 0, Icons.watch_later_outlined, const Color(0xFFFFF2E5), posOrange),
             _buildStatCard('Proses', stats['proses'] ?? 0, Icons.local_shipping_outlined, const Color(0xFFEBF4FF), posBlue),
@@ -155,33 +180,38 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
     );
   }
 
-  // ... (Sisa kode Anda dari _buildStatCard hingga akhir tidak perlu diubah)
-
+  // Sisa kode di bawah ini tidak ada perubahan...
   Widget _buildStatCard(String title, int count, IconData icon, Color bgColor, Color fgColor) {
     return Container(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  count.toString(),
-                  style: GoogleFonts.poppins(color: fgColor, fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(color: Colors.grey[700], fontSize: 13),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      count.toString(),
+                      style: GoogleFonts.poppins(color: fgColor, fontSize: 24, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                    ),
+                  ),
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: GoogleFonts.poppins(color: fgColor.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             Icon(icon, color: fgColor, size: 28),
           ],
         ),
@@ -189,50 +219,16 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
     );
   }
 
-  Widget _buildCustomTabBar(Map<String, int> stats) {
-    final tabs = ['Menunggu', 'Dalam Proses', 'Terkirim'];
-    final counts = [stats['menunggu'], stats['proses'], stats['terkirim']];
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(50),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-      ),
-      child: TabBar(
-        controller: _tabController,
-        labelColor: posOrange,
-        unselectedLabelColor: Colors.grey[600],
-        indicator: BoxDecoration(
-          color: posOrange.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(50),
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        unselectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-        tabs: [
-          Tab(text: 'Menunggu (${counts[0] ?? 0})'),
-          Tab(text: 'Dalam Proses (${counts[1] ?? 0})'),
-          Tab(text: 'Terkirim (${counts[2] ?? 0})'),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSuratList(List<Surat> suratList) {
     return ListView.builder(
-      key: ValueKey(_tabController.index), // Key untuk memicu animasi
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: suratList.length,
       itemBuilder: (context, index) {
-        final surat = suratList[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12.0),
-          child: SuratCard(surat: surat, isKurirView: true),
+          child: SuratCard(surat: suratList[index], isKurirView: true),
         );
       },
     );
@@ -240,7 +236,7 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
 
   Widget _buildEmptyList(String message) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 20.0),
+      padding: const EdgeInsets.symmetric(vertical: 60.0, horizontal: 20.0),
       child: Center(
         child: Text(message, textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600])),
       ),
@@ -253,7 +249,7 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -267,13 +263,10 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
           _buildSummaryItem(stats['terkirim'] ?? 0, 'Surat Terkirim', posOrange),
           const SizedBox(height: 12),
           _buildSummaryItem((stats['proses'] ?? 0), 'Sedang Diproses', posBlue),
-          const Divider(height: 24),
+          const Divider(height: 32),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -292,11 +285,32 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: GoogleFonts.poppins(color: Colors.grey[700], fontSize: 15)),
-        Text(
-          count.toString(),
-          style: GoogleFonts.poppins(color: color, fontSize: 22, fontWeight: FontWeight.bold),
-        ),
+        Text(count.toString(), style: GoogleFonts.poppins(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
       ],
     );
+  }
+}
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverTabBarDelegate(this._tabBar, {required this.backgroundColor});
+  final TabBar _tabBar;
+  final Color backgroundColor;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: backgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return backgroundColor != oldDelegate.backgroundColor;
   }
 }
