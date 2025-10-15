@@ -7,9 +7,9 @@ import 'package:animate_do/animate_do.dart';
 
 // Import halaman dan model yang diperlukan
 import 'qr_scanner_page.dart';
-import '../models/surat.dart'; // ✅ Menggunakan model Surat terpusat
+import '../models/surat.dart'; //  Menggunakan model Surat terpusat
 
-// ❌ Definisi class Surat yang duplikat sudah dihapus dari sini
+//  Definisi class Surat yang duplikat sudah dihapus dari sini
 
 class TimelineItem {
   final String status;
@@ -243,9 +243,6 @@ class _TrackingPageState extends State<TrackingPage> {
     );
   }
   
-  // Sisa widget builder lainnya (_buildEmptyState, _buildResultContent, dll) tetap sama
-  // ... (Anda bisa salin dari jawaban sebelumnya jika perlu)
-
    Widget _buildEmptyState() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32.0),
@@ -346,7 +343,7 @@ class _TrackingPageState extends State<TrackingPage> {
             ),
             child: Row(
               children: [
-                Icon(Icons.article, color: Colors.white, size: 28),
+                const Icon(Icons.article, color: Colors.white, size: 28),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

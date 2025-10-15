@@ -293,7 +293,7 @@ class BerandaContent extends StatelessWidget {
 //====================================================================//
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required bool isKurir});
 
   @override
   State<HomePage> createState() => _HomePageState();

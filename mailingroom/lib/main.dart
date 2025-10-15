@@ -2,11 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mailingroom/pages/dashboard/dashboard_selection_page.dart';
+import 'package:mailingroom/pages/dashboard/kurir_dashboard.dart';
 import 'package:provider/provider.dart';
 
 // 1. Sesuaikan path import ini dengan struktur folder Anda
-import 'package:mailingroom/pages/home_page.dart'; 
-import 'package:mailingroom/providers/surat_provider.dart'; 
+import 'package:mailingroom/pages/home_page.dart';
+import 'package:mailingroom/providers/surat_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -45,7 +47,7 @@ class MyApp extends StatelessWidget {
             secondary: posOrange,
             background: const Color(0xFFF8F9FA),
           ),
-          
+
           // 2. Terapkan Font Default ke Seluruh Aplikasi
           textTheme: GoogleFonts.poppinsTextTheme(
             Theme.of(context).textTheme,
@@ -91,18 +93,18 @@ class MyApp extends StatelessWidget {
             ),
             labelStyle: TextStyle(color: posBlue.withOpacity(0.8)),
           ),
-          
+
           bottomNavigationBarTheme: BottomNavigationBarThemeData(
             selectedItemColor: posBlue,
             unselectedItemColor: Colors.grey[600],
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           ),
-          
+
           useMaterial3: true,
         ),
 
         // Halaman pertama yang akan dibuka
-        home: const HomePage(),
+        home: const KurirDashboard(),
       ),
     );
   }

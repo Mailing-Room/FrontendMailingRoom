@@ -4,26 +4,28 @@ publish_to: 'none' # Mencegah publikasi ke pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0' # Memastikan kompatibilitas Dart SDK
+  sdk: '>=3.0.0 <4.0.0' # Kompatibel dengan Flutter 3.x
 
 dependencies:
   flutter:
     sdk: flutter
+
+  # Font & UI
   google_fonts: ^6.2.1
-  
+  font_awesome_flutter: ^10.7.0
+  lucide_flutter: ^0.545.0
+  flutter_staggered_animations: ^1.1.1
+  animate_do: ^4.2.0
+
   # Manajemen state
   provider: ^6.1.1
-  
-  # UI dan utilitas
-  font_awesome_flutter: ^10.7.0
-  flutter_staggered_animations: ^1.1.1
 
+  # Utilitas tambahan
   file_picker: ^8.0.0
   timeline_tile: ^2.0.0
-  animate_do: ^4.2.0
   intl: ^0.20.2
 
-  # barcode scanner
+  # Fitur tambahan
   mobile_scanner: ^3.5.5
 
 dev_dependencies:
@@ -38,7 +40,3 @@ flutter:
   assets:
     - assets/images/POSIND_2023.svg.png
     - assets/images/kurir.png
-
-
-
-  
