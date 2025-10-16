@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mailingroom/pages/dashboard/dashboard_selection_page.dart';
-import 'package:mailingroom/pages/dashboard/kurir_dashboard.dart';
+import 'package:mailingroom/pages/dashboard/admin_dashboard.dart';
 import 'package:provider/provider.dart';
 
 // 1. Sesuaikan path import ini dengan struktur folder Anda
@@ -104,7 +104,7 @@ class MyApp extends StatelessWidget {
         ),
 
         // Halaman pertama yang akan dibuka
-        home: const KurirDashboard(),
+        home: const AdminDashboard(),
       ),
     );
   }
