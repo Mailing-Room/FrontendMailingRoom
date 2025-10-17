@@ -118,7 +118,6 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
     );
   }
 
-  // ✅ APPBAR DIPERBAIKI AGAR SELALU RATA KIRI
   SliverAppBar _buildHeader(BuildContext context, String namaKurir) {
     return SliverAppBar(
       backgroundColor: Colors.white,
@@ -126,15 +125,11 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
       pinned: true,
       elevation: 0.5,
       automaticallyImplyLeading: false,
-      
-      // Menggunakan 'leading' untuk logo agar posisinya pasti di kiri
       leadingWidth: 56,
       leading: Padding(
         padding: const EdgeInsets.only(left: 16.0),
         child: Image.asset('assets/images/POSIND_2023.svg.png', errorBuilder: (c,e,s) => const SizedBox()),
       ),
-      
-      // 'title' sekarang hanya berisi teks
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -142,9 +137,8 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
           Text(namaKurir, style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14)),
         ],
       ),
-      centerTitle: false, // Memastikan title tidak ke tengah
-      titleSpacing: 12.0, // Jarak antara logo (leading) dan title
-
+      centerTitle: false,
+      titleSpacing: 12.0,
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 16.0),
@@ -180,39 +174,39 @@ class _KurirDashboardState extends State<KurirDashboard> with SingleTickerProvid
     );
   }
 
-  // Sisa kode di bawah ini tidak ada perubahan...
   Widget _buildStatCard(String title, int count, IconData icon, Color bgColor, Color fgColor) {
     return Container(
-      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
+        // Kurangi padding agar tidak overflow
         padding: const EdgeInsets.all(12.0),
-        child: Row(
+        child: Stack(
           children: [
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      count.toString(),
-                      style: GoogleFonts.poppins(color: fgColor, fontSize: 24, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                    ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center, // Pusatkan secara vertikal
+              children: [
+                Text(
+                  count.toString(),
+                  style: GoogleFonts.poppins(color: fgColor, fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                Flexible( // Gunakan Flexible untuk memastikan teks pas
+                  child: Text(
+                    title,
+                    style: GoogleFonts.poppins(color: fgColor.withOpacity(0.9), fontSize: 14, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Flexible(
-                    child: Text(
-                      title,
-                      style: GoogleFonts.poppins(color: fgColor.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Icon(icon, color: fgColor, size: 28),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Icon(icon, color: fgColor, size: 28),
+            ),
           ],
         ),
       ),

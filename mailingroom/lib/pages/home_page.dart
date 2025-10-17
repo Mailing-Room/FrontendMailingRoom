@@ -139,7 +139,7 @@ class BerandaContent extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 28),
-              SectionHeader(
+              const SectionHeader(
                   title: '📂 Surat Terbaru',
                   actionLabel: 'Lihat Semua',
                   onAction: null),
