@@ -104,7 +104,7 @@ class MyApp extends StatelessWidget {
         ),
 
         // Halaman pertama yang akan dibuka
-        home: const HomePage(isKurir: false),
+        home: const AdminDashboard(),
       ),
     );
   }
