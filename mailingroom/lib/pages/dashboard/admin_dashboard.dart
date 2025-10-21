@@ -22,14 +22,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
   AdminPage _selectedPage = AdminPage.dashboard;
   bool _isSidebarExpanded = false;
 
-  // Controller untuk search bar
   final TextEditingController _suratSearchController = TextEditingController();
   String _suratSearchQuery = '';
 
   // Warna tema PT Pos Indonesia
   final Color posOrange = const Color(0xFFF37021);
   final Color posBlue = const Color(0xFF00529C);
-  final Color posRed = const Color(0xFFC62828);
+  final Color posRed = const Color(0xFFC62828); // Hanya untuk aksi Hapus
   final Color lightBg = const Color(0xFFF5F7FA);
 
   @override
@@ -78,33 +77,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
         }
 
         // Tampilan untuk Mobile
-        return Scaffold(
-          backgroundColor: lightBg,
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            foregroundColor: posBlue,
-            elevation: 1.0,
-            title: Text(_getPageTitle(), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black87)),
-            leading: IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                setState(() {
-                  _isSidebarExpanded = !_isSidebarExpanded;
-                });
-              },
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(), // Tutup keyboard
+          child: Scaffold(
+            backgroundColor: lightBg,
+            appBar: AppBar(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black87,
+              elevation: 1.0,
+              title: Text(_getPageTitle(), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black87)),
+              leading: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () {
+                  // ✅ TUTUP KEYBOARD SEBELUM BUKA SIDEBAR
+                  FocusScope.of(context).unfocus(); 
+                  setState(() {
+                    _isSidebarExpanded = !_isSidebarExpanded;
+                  });
+                },
+              ),
             ),
-          ),
-          body: Stack(
-            children: [
-              _buildMainContent(isMobile: true),
-              if (_isSidebarExpanded) ...[
-                GestureDetector(
-                  onTap: _closeSidebar,
-                  child: Container(color: Colors.black.withOpacity(0.5)),
-                ),
-                _buildSideBar(isMobile: true),
-              ]
-            ],
+            body: Stack(
+              children: [
+                _buildMainContent(isMobile: true),
+                if (_isSidebarExpanded) ...[
+                  GestureDetector(
+                    onTap: _closeSidebar,
+                    child: Container(color: Colors.black.withOpacity(0.5)),
+                  ),
+                  _buildSideBar(isMobile: true),
+                ]
+              ],
+            ),
           ),
         );
       },
@@ -126,9 +130,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       width: _isSidebarExpanded ? 250 : (isMobile ? 0 : 70),
-      color: posBlue, // Latar belakang biru
+      color: posBlue,
       child: Column(
         children: [
+          // --- HEADER SIDEBAR ---
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -151,13 +156,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ),
           const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
-          const SizedBox(height: 16),
-          _buildSideBarItem(title: 'Dashboard', icon: Icons.dashboard_outlined, page: AdminPage.dashboard, isMobile: isMobile),
-          _buildSideBarItem(title: 'Kelola Surat', icon: Icons.drafts_outlined, page: AdminPage.kelolaSurat, isMobile: isMobile),
-          _buildSideBarItem(title: 'Kelola User', icon: Icons.people_outline, page: AdminPage.kelolaUser, isMobile: isMobile),
-          _buildSideBarItem(title: 'Kelola Divisi', icon: Icons.business_outlined, page: AdminPage.kelolaDivisi, isMobile: isMobile),
-          _buildSideBarItem(title: 'Cetak Laporan', icon: Icons.print_outlined, page: AdminPage.cetakLaporan, isMobile: isMobile),
-          const Spacer(),
+          
+          // ✅ DAFTAR MENU (SCROLLABLE)
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  _buildSideBarItem(title: 'Dashboard', icon: Icons.dashboard_outlined, page: AdminPage.dashboard, isMobile: isMobile),
+                  _buildSideBarItem(title: 'Kelola Surat', icon: Icons.drafts_outlined, page: AdminPage.kelolaSurat, isMobile: isMobile),
+                  _buildSideBarItem(title: 'Kelola User', icon: Icons.people_outline, page: AdminPage.kelolaUser, isMobile: isMobile),
+                  _buildSideBarItem(title: 'Kelola Divisi', icon: Icons.business_outlined, page: AdminPage.kelolaDivisi, isMobile: isMobile),
+                  _buildSideBarItem(title: 'Cetak Laporan', icon: Icons.print_outlined, page: AdminPage.cetakLaporan, isMobile: isMobile),
+                ],
+              ),
+            ),
+          ),
+          
+          // --- TOMBOL LOGOUT (MENEMPEL DI BAWAH) ---
+          const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
+          const SizedBox(height: 8),
           _buildSideBarItem(title: 'Logout', icon: Icons.logout, page: null, isLogout: true, isMobile: isMobile),
           const SizedBox(height: 16),
         ],
@@ -182,7 +200,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? posOrange : Colors.transparent, // Latar item aktif oranye
+          color: isSelected ? posOrange : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -267,7 +285,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0), // ✅ Padding dikurangi
+        padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
             Expanded(
@@ -281,7 +299,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4), // ✅ Jarak dikurangi
+                  const SizedBox(height: 4),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
@@ -348,18 +366,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
               suffixIcon: _suratSearchQuery.isNotEmpty 
                 ? IconButton(
                     icon: const Icon(Icons.clear), 
-                    onPressed: () => _suratSearchController.clear(),
+                    onPressed: () {
+                      _suratSearchController.clear();
+                      FocusScope.of(context).unfocus(); // Tutup keyboard
+                    },
                   ) 
                 : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!)
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey[300]!)
-              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
             ),
+            onSubmitted: (_) {
+              FocusScope.of(context).unfocus(); // Tutup keyboard saat Enter
+            },
           ),
         ),
         SizedBox(
@@ -501,11 +519,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildRoleChip(String role) {
-    Color color;
-    if (role == 'Staff') { color = posBlue; }
-    else if (role == 'Manager') { color = Colors.green; }
-    else { color = Colors.grey; }
-    
+    Color color = role == 'Staff' ? posBlue : Colors.green;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -521,11 +535,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
     if (status.contains('Menunggu')) { color = posOrange; }
     else if (status.contains('Proses')) { color = posBlue; }
     else if (status.contains('Selesai') || status.contains('Terkirim')) { color = Colors.green; }
-    else { color = posRed; } // Misal 'Gagal'
+    else { color = posRed; }
 
-    return _buildRoleChip(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(status, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+    );
   }
-
 
   Widget _buildKelolaDivisiContent({required bool isMobile}) {
     final depts = [
