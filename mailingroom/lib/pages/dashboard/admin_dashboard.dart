@@ -22,7 +22,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
   AdminPage _selectedPage = AdminPage.dashboard;
   bool _isSidebarExpanded = false;
 
-  // Controller untuk search bar
   final TextEditingController _suratSearchController = TextEditingController();
   String _suratSearchQuery = '';
 
@@ -90,6 +89,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               leading: IconButton(
                 icon: const Icon(Icons.menu),
                 onPressed: () {
+                  // ✅ TUTUP KEYBOARD SEBELUM BUKA SIDEBAR
+                  FocusScope.of(context).unfocus(); 
                   setState(() {
                     _isSidebarExpanded = !_isSidebarExpanded;
                   });
@@ -129,9 +130,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       width: _isSidebarExpanded ? 250 : (isMobile ? 0 : 70),
-      color: posBlue, // ✅ Latar belakang BIRU
+      color: posBlue,
       child: Column(
         children: [
+          // --- HEADER SIDEBAR ---
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -155,7 +157,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
           
-          // ✅ PERBAIKAN OVERFLOW: Menu dibuat scrollable
+          // ✅ DAFTAR MENU (SCROLLABLE)
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -171,6 +173,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
           ),
           
+          // --- TOMBOL LOGOUT (MENEMPEL DI BAWAH) ---
           const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
           const SizedBox(height: 8),
           _buildSideBarItem(title: 'Logout', icon: Icons.logout, page: null, isLogout: true, isMobile: isMobile),
@@ -197,7 +200,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? posOrange : Colors.transparent, // ✅ Item aktif ORANYE
+          color: isSelected ? posOrange : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -365,7 +368,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     icon: const Icon(Icons.clear), 
                     onPressed: () {
                       _suratSearchController.clear();
-                      FocusScope.of(context).unfocus();
+                      FocusScope.of(context).unfocus(); // Tutup keyboard
                     },
                   ) 
                 : null,
@@ -373,7 +376,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
             ),
             onSubmitted: (_) {
-              FocusScope.of(context).unfocus();
+              FocusScope.of(context).unfocus(); // Tutup keyboard saat Enter
             },
           ),
         ),
