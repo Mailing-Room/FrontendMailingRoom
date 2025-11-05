@@ -6,34 +6,44 @@ import '../../auth/auth_service.dart';
 import '../../auth/login_page.dart';
 import '../../models/user.dart';
 import '../home_page.dart';
+import 'admin_dashboard.dart';
 
 class DashboardSelectionPage extends StatelessWidget {
   const DashboardSelectionPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Ambil instance AuthService dari Provider
     final authService = Provider.of<AuthService>(context, listen: false);
 
-    // Gunakan StreamBuilder untuk mendengarkan status login secara real-time
+    // Kode ini akan mendengarkan status login
     return StreamBuilder<MyUser?>(
       stream: authService.userStream,
       builder: (context, snapshot) {
-        // 1. Saat sedang loading awal, tampilkan indikator
+        
+        // 1. Saat 'AuthService' sedang mengecek token (jika ada)
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
-        // 2. Jika sudah login (ada data user)
+        // 2. Jika 'AuthService' mengirim data user (artinya login berhasil)
         if (snapshot.hasData && snapshot.data != null) {
           final user = snapshot.data!;
-          // Arahkan ke HomePage dengan parameter peran yang benar
-          return HomePage(isKurir: user.role == 'kurir');
+          
+          switch (user.role) {
+            case 'admin':
+              return const AdminDashboard();
+            case 'kurir':
+              return const HomePage(role: 'kurir');
+            case 'pengirim':
+              return const HomePage(role: 'pengirim');
+            case 'penerima':
+              return const HomePage(role: 'penerima');
+            default:
+              return const LoginPage();
+          }
         }
-
-        // 3. Jika belum login (tidak ada data), arahkan ke LoginPage
+        
+        // 3. Jika 'AuthService' mengirim 'null' (artinya belum login)
         return const LoginPage();
       },
     );

@@ -1,10 +1,9 @@
-// Path: lib/auth/register_page.dart
+// lib/auth/register_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:mailingroom/auth/auth_service.dart';
 import 'package:provider/provider.dart';
-import 'package:mailingroom/models/user.dart';
-import 'package:mailingroom/pages/home_page.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -18,37 +17,56 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedRole;
-  final AuthService _authService = AuthService();
-
+  bool _isLoading = false;
   String _errorMessage = '';
 
   Future<void> _register() async {
-    if (_formKey.currentState!.validate() && _selectedRole != null) {
-      final user = await _authService.registerWithEmailAndPassword(
+    // Validasi form dan peran
+    if (!_formKey.currentState!.validate() || _isLoading) return;
+    
+    if (_selectedRole == null) {
+      setState(() { _errorMessage = 'Harap pilih peran pengguna.'; });
+      return;
+    }
+    
+    setState(() { _isLoading = true; _errorMessage = ''; });
+
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      
+      // Panggil fungsi register yang baru
+      await authService.register(
         _emailController.text,
         _passwordController.text,
         _selectedRole!,
       );
-      if (user == null) {
-        setState(() {
-          _errorMessage = 'Registrasi gagal. Coba lagi.';
-        });
-      } else {
-        Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registrasi berhasil! Silakan login.'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context); // Kembali ke halaman login
       }
-    } else {
-      setState(() {
-        _errorMessage = 'Harap pilih peran pengguna.';
-      });
+
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+        });
+      }
+    }
+
+    if (mounted) {
+      setState(() { _isLoading = false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: const Text('Registrasi Akun'),
-        centerTitle: true,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -61,11 +79,7 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Email tidak boleh kosong';
@@ -77,11 +91,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
                   validator: (value) {
                     if (value == null || value.isEmpty || value.length < 6) {
                       return 'Password minimal 6 karakter';
@@ -94,9 +104,10 @@ class _RegisterPageState extends State<RegisterPage> {
                   value: _selectedRole,
                   decoration: const InputDecoration(
                     labelText: 'Pilih Peran',
-                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person_outline),
                   ),
-                  items: ['user', 'kurir'] // Hanya user dan kurir
+                  // Sesuaikan peran ini dengan 'role_id' di backend Go Anda
+                  items: ['pengirim', 'kurir', 'admin'] 
                       .map((role) => DropdownMenuItem(
                             value: role,
                             child: Text(role.toUpperCase()),
@@ -124,7 +135,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 10),
                 ElevatedButton(
                   onPressed: _register,
-                  child: const Text('Daftar'),
+                  child: _isLoading 
+                      ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                      : const Text('Daftar'),
                 ),
               ],
             ),

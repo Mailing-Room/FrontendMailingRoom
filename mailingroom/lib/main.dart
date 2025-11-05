@@ -3,11 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mailingroom/pages/dashboard/dashboard_selection_page.dart';
-import 'package:mailingroom/pages/dashboard/admin_dashboard.dart';
 import 'package:provider/provider.dart';
 
-// 1. Sesuaikan path import ini dengan struktur folder Anda
-import 'package:mailingroom/pages/home_page.dart';
+// Import service dan provider
+import 'package:mailingroom/auth/auth_service.dart';
 import 'package:mailingroom/providers/surat_provider.dart';
 
 void main() {
@@ -24,13 +23,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Menggunakan MultiProvider untuk menyiapkan state management di seluruh aplikasi
+    // Menggunakan MultiProvider untuk menyiapkan state management
     return MultiProvider(
       providers: [
-        // 2. Mendaftarkan SuratProvider Anda di sini
+        ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => SuratProvider()),
-
-        // Anda bisa menambahkan provider lain di bawahnya jika ada
       ],
       child: MaterialApp(
         title: 'Mailingroom POS IND',
@@ -47,10 +44,10 @@ class MyApp extends StatelessWidget {
             secondary: posOrange,
             background: const Color(0xFFF8F9FA),
           ),
-
+          
           // 2. Terapkan Font Default ke Seluruh Aplikasi
-          textTheme: GoogleFonts.poppinsTextTheme(
-            Theme.of(context).textTheme,
+          textTheme: Theme.of(context).textTheme.merge(
+            GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme)
           ),
 
           // 3. Kustomisasi Gaya Widget Default
@@ -79,6 +76,11 @@ class MyApp extends StatelessWidget {
               ),
             ),
           ),
+          
+          floatingActionButtonTheme: const FloatingActionButtonThemeData(
+            backgroundColor: posOrange, // Tombol FAB berwarna oranye
+            foregroundColor: Colors.white,
+          ),
 
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
@@ -93,18 +95,24 @@ class MyApp extends StatelessWidget {
             ),
             labelStyle: TextStyle(color: posBlue.withOpacity(0.8)),
           ),
-
+          
           bottomNavigationBarTheme: BottomNavigationBarThemeData(
-            selectedItemColor: posBlue,
+            selectedItemColor: posOrange, // Item navbar yang aktif berwarna oranye
             unselectedItemColor: Colors.grey[600],
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           ),
 
+          tabBarTheme: TabBarThemeData(
+            labelColor: posOrange, // Teks tab yang aktif berwarna oranye
+            unselectedLabelColor: Colors.grey[600],
+            indicatorColor: posOrange, // Garis bawah/indikator berwarna oranye
+          ),
+          
           useMaterial3: true,
         ),
 
-        // Halaman pertama yang akan dibuka
-        home: const AdminDashboard(),
+        // Halaman pertama adalah "penjaga" yang akan menampilkan LoginPage
+        home: const DashboardSelectionPage(),
       ),
     );
   }

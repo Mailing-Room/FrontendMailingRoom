@@ -56,16 +56,6 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
         TextEditingController(text: widget.surat?.penerimaTujuan ?? '');
     pengirimAsalController =
         TextEditingController(text: widget.surat?.pengirimAsal ?? '');
-    pengirimDivisiController =
-        TextEditingController(text: widget.surat?.pengirimDivisi ?? '');
-    pengirimDepartemenController =
-        TextEditingController(text: widget.surat?.pengirimDepartemen ?? '');
-    penerimaDivisiController =
-        TextEditingController(text: widget.surat?.penerimaDivisi ?? '');
-    penerimaDepartemenController =
-        TextEditingController(text: widget.surat?.penerimaDepartemen ?? '');
-    beratController =
-        TextEditingController(text: widget.surat?.berat?.toString() ?? '');
 
     if (widget.isEdit && widget.surat != null) {
       _selectedJenisSurat = widget.surat!.jenisSurat;
@@ -141,19 +131,15 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
 
     try {
       final suratData = Surat(
-        id: widget.isEdit ? widget.surat!.id : null,
+        id: widget.isEdit ? (widget.surat!.id ?? '') : '',
         nomor: nomorController.text,
         perihal: perihalController.text,
         deskripsiSurat: deskripsiController.text,
         penerimaTujuan: penerimaController.text,
         pengirimAsal: pengirimAsalController.text,
-        pengirimDivisi: pengirimDivisiController.text,
-        pengirimDepartemen: pengirimDepartemenController.text,
-        penerimaDivisi: penerimaDivisiController.text,
-        penerimaDepartemen: penerimaDepartemenController.text,
+        pengirimId: widget.isEdit ? widget.surat!.pengirimId : 'default_id', // Add this line
         jenisSurat: _selectedJenisSurat!,
         sifatSurat: _selectedSifatSurat!,
-        berat: double.tryParse(beratController.text) ?? 0.0,
         status: widget.isEdit ? widget.surat!.status : 'Baru',
         tanggal: widget.isEdit
             ? widget.surat!.tanggal

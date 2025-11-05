@@ -1,48 +1,82 @@
 // lib/auth/auth_service.dart
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../models/user.dart'; // Pastikan nama class di sini adalah MyUser
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/user.dart';
 
 class AuthService with ChangeNotifier {
   final StreamController<MyUser?> _userController = StreamController<MyUser?>.broadcast();
   Stream<MyUser?> get userStream => _userController.stream;
   MyUser? _currentUser;
+  
+  final String _baseUrl = 'https://mailingroom-db0c7a47e986.herokuapp.com';
+  final _storage = const FlutterSecureStorage();
+  String? _token;
 
-  // ✅ CONSTRUCTOR YANG HILANG. TAMBAHKAN INI.
   AuthService() {
-    // Saat AuthService pertama kali dibuat, langsung kirim status awal
-    // bahwa tidak ada user yang login (null). Ini akan menghentikan loading.
+    // INI ADALAH KUNCI PERBAIKAN LOADING:
+    // Langsung kirim status 'null' (belum login) saat aplikasi dimulai.
     _userController.add(null);
   }
 
-  // Metode login dummy
   Future<void> login(String email, String password) async {
-    await Future.delayed(const Duration(seconds: 1));
+    final url = Uri.parse('$_baseUrl/login');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
 
-    if (email == 'kurir@pos.id') {
-      _currentUser = MyUser(uid: 'kurir_id_dummy', email: email, role: 'kurir');
-    } else if (email == 'pengirim@pos.id') {
-      _currentUser = MyUser(uid: 'pengirim_id_dummy', email: email, role: 'pengirim');
-    } else {
-      throw Exception('Email atau password salah');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _currentUser = MyUser.fromJson(data['user']);
+        _token = data['token'];
+        if (_token == null) throw Exception('Token tidak ditemukan');
+        await _storage.write(key: 'auth_token', value: _token);
+        _userController.add(_currentUser);
+        notifyListeners();
+      } else {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Login Gagal');
+      }
+    } catch (e) {
+      throw Exception(e.toString());
     }
-    
-    _userController.add(_currentUser);
-    notifyListeners();
   }
 
-  Future<MyUser?> registerWithEmailAndPassword(String email, String password, String role) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return MyUser(uid: 'new_user_id_${DateTime.now().millisecondsSinceEpoch}', email: email, role: role);
+  Future<void> register(String email, String password, String role) async {
+    final url = Uri.parse('$_baseUrl/register');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'role_id': role,
+        }),
+      );
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['message'] ?? 'Registrasi Gagal');
+      }
+    } catch (e) {
+      throw Exception(e.toString());
+    }
   }
 
   Future<void> signOut() async {
     _currentUser = null;
+    _token = null;
+    await _storage.delete(key: 'auth_token');
     _userController.add(null);
     notifyListeners();
   }
-
+  
   @override
   void dispose() {
     _userController.close();
