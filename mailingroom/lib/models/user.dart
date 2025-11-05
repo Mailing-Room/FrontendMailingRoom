@@ -1,31 +1,41 @@
-// Path: lib/models/user.dart
-
 class MyUser {
   final String uid;
   final String email;
-  final String role; // 'pengirim', 'kurir', 'penerima'
+  final String role;
+  final String nama;
+  final String? officeId;
+  final String? departemenId;
+  final String? divisiId;
+  final String? jabatan;
+  final String? phone;
+  final String? createdAt; // Opsional jika perlu
 
   MyUser({
     required this.uid,
     required this.email,
     required this.role,
+    required this.nama,
+    this.officeId,
+    this.departemenId,
+    this.divisiId,
+    this.jabatan,
+    this.phone,
+    this.createdAt,
   });
 
-  // Factory constructor untuk membuat objek MyUser dari Map (data Firestore)
-  factory MyUser.fromMap(Map<String, dynamic> map) {
+  // Fungsi ini mengubah data JSON dari server Go menjadi object MyUser
+  factory MyUser.fromJson(Map<String, dynamic> json) {
     return MyUser(
-      uid: map['uid'] ?? '',
-      email: map['email'] ?? '',
-      role: map['role'] ?? '',
+      uid: json['user_id'],      // Cocokkan dengan json:"user_id"
+      email: json['email'],
+      role: json['role_id'],      // Cocokkan dengan json:"role_id"
+      nama: json['name'],         // Cocokkan dengan json:"name"
+      officeId: json['office_id'],
+      departemenId: json['departemen_id'],
+      divisiId: json['divisi_id'],
+      jabatan: json['jabatan'],
+      phone: json['phone'],
+      createdAt: json['createdAt'],
     );
-  }
-
-  // Metode untuk mengkonversi objek MyUser menjadi Map (untuk disimpan ke Firestore)
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'email': email,
-      'role': role,
-    };
   }
 }

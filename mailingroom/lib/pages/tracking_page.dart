@@ -4,12 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:timeline_tile/timeline_tile.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:intl/intl.dart';
 
 // Import halaman dan model yang diperlukan
 import 'qr_scanner_page.dart';
-import '../models/surat.dart'; //  Menggunakan model Surat terpusat
-
-//  Definisi class Surat yang duplikat sudah dihapus dari sini
+import '../models/surat.dart'; // Menggunakan model Surat terpusat
 
 class TimelineItem {
   final String status;
@@ -42,16 +41,50 @@ class _TrackingPageState extends State<TrackingPage> {
   bool _showResult = false;
   Surat? _foundSurat;
 
-  final Color posOrange = const Color(0xFFF37021);
-  final Color posBlue = const Color(0xFF00529C);
+  // Ambil warna dari tema
+  late Color posOrange;
+  late Color posBlue;
 
-  // DATA DUMMY
+  // DATA DUMMY (Sudah disesuaikan dengan model surat.dart Anda)
   final List<Surat> _dummySuratList = [
-    Surat(id: '1', nomor: '123/PKS/X/2025', perihal: 'Perjanjian Kerja Sama Proyek A', deskripsiSurat: 'Dokumen perjanjian kerja sama proyek', sifatSurat: 'Penting', berat: 100.0, pengirimAsal: 'PT Sentosa Abadi', pengirimDivisi: 'Marketing', pengirimDepartemen: 'Sales', penerimaTujuan: 'penerima@mailingroom.com', penerimaDivisi: 'Keuangan', penerimaDepartemen: 'Accounting', jenisSurat: 'Masuk', status: 'Dalam Perjalanan', tanggal: '2025-10-13'),
-    Surat(id: '2', nomor: '321/ED/X/2025', perihal: 'Surat Edaran Libur Nasional', deskripsiSurat: 'Surat edaran resmi mengenai libur nasional', sifatSurat: 'Biasa', berat: 50.0, pengirimAsal: 'Divisi HRD', pengirimDivisi: 'HR', pengirimDepartemen: 'General Affairs', penerimaTujuan: 'penerima@mailingroom.com', penerimaDivisi: 'Semua', penerimaDepartemen: 'Semua', jenisSurat: 'Keluar', status: 'Terkirim', tanggal: '2025-10-14'),
+    Surat(
+      id: 'naskah_id_1',
+      nomor: '123/PKS/X/2025',
+      perihal: 'Perjanjian Kerja Sama Proyek A',
+      deskripsiSurat: 'Dokumen perjanjian kerja sama proyek',
+      sifatSurat: 'Penting',
+      jenisSurat: 'Masuk',
+      status: 'Dalam Perjalanan',
+      tanggal: '2025-10-13T11:00:00Z',
+      pengirimId: 'user-pengirim-123',
+      pengirimAsal: 'PT Sentosa Abadi', // Ini adalah 'nama_pengirim'
+      penerimaId: 'user-penerima-456',
+      penerimaTujuan: 'Divisi Keuangan', // Ini adalah 'nama_penerima'
+    ),
+    Surat(
+      id: 'naskah_id_2',
+      nomor: '321/ED/X/2025',
+      perihal: 'Surat Edaran Libur Nasional',
+      deskripsiSurat: 'Surat edaran resmi mengenai libur nasional',
+      sifatSurat: 'Biasa',
+      jenisSurat: 'Keluar',
+      status: 'Terkirim',
+      tanggal: '2025-10-14T14:00:00Z',
+      pengirimId: 'user-pengirim-789',
+      pengirimAsal: 'Divisi HRD',
+      penerimaId: 'all-users',
+      penerimaTujuan: 'Semua Divisi',
+    ),
   ];
 
-  // FUNGSI UNTUK MEMBUKA SCANNER
+  @override
+  void didChangeDependencies() {
+    // Inisialisasi warna tema di sini
+    posOrange = Theme.of(context).colorScheme.secondary;
+    posBlue = Theme.of(context).colorScheme.primary;
+    super.didChangeDependencies();
+  }
+
   Future<void> _scanQRCode() async {
     try {
       final scannedData = await Navigator.push<String>(
@@ -71,20 +104,14 @@ class _TrackingPageState extends State<TrackingPage> {
 
   List<TimelineItem> _generateTimeline(Surat surat) {
     List<TimelineItem> timeline = [];
+    String formattedDate = DateFormat('yyyy-MM-dd, HH:mm').format(DateTime.parse(surat.tanggal));
+
     if (surat.jenisSurat == 'Masuk') {
-      timeline.add(TimelineItem(status: 'Surat Dibuat', tanggal: '${surat.tanggal}, 08:00', lokasi: surat.pengirimAsal, petugas: surat.pengirimDivisi, catatan: 'Surat dibuat oleh ${surat.pengirimDepartemen}', isCompleted: true));
-      timeline.add(TimelineItem(status: 'Diverifikasi', tanggal: '${surat.tanggal}, 09:30', lokasi: 'Mail Room', petugas: 'Admin Mail Room', catatan: 'Surat telah diverifikasi', isCompleted: true));
+      timeline.add(TimelineItem(status: 'Surat Dibuat', tanggal: formattedDate, lokasi: surat.pengirimAsal, petugas: surat.pengirimId, catatan: 'Surat dibuat oleh pengirim', isCompleted: true));
+      timeline.add(TimelineItem(status: 'Diverifikasi', tanggal: formattedDate, lokasi: 'Mail Room', petugas: 'Admin Mail Room', catatan: 'Surat telah diverifikasi', isCompleted: true));
       bool inTransit = surat.status == 'Dalam Perjalanan';
-      timeline.add(TimelineItem(status: 'Dalam Perjalanan', tanggal: inTransit ? '${surat.tanggal}, 11:00' : '-', lokasi: inTransit ? 'Sortir Jakarta Utara' : '-', petugas: inTransit ? 'Kurir Express' : '-', catatan: inTransit ? 'Menuju lokasi penerima' : 'Belum diproses', isCompleted: inTransit));
-      timeline.add(TimelineItem(status: 'Diterima', tanggal: '-', lokasi: surat.penerimaDivisi ?? '-', petugas: '-', catatan: 'Belum diterima', isCompleted: false));
-    }
-     if (surat.jenisSurat == 'Keluar') {
-      timeline.add(TimelineItem(status: 'Surat Dibuat', tanggal: '${surat.tanggal}, 08:00', lokasi: surat.pengirimDivisi, petugas: surat.pengirimDepartemen, catatan: 'Surat dibuat dan diajukan', isCompleted: true));
-      timeline.add(TimelineItem(status: 'Diverifikasi', tanggal: '${surat.tanggal}, 09:15', lokasi: 'Sekretariat', petugas: 'Admin Sekretariat', catatan: 'Surat telah diverifikasi', isCompleted: true));
-      timeline.add(TimelineItem(status: 'Dikirim', tanggal: '${surat.tanggal}, 10:30', lokasi: 'Mail Room', petugas: 'Kurir Internal', catatan: 'Surat dalam pengiriman', isCompleted: true));
-      if (surat.status == 'Terkirim') {
-        timeline.add(TimelineItem(status: 'Terkirim', tanggal: '${surat.tanggal}, 14:00', lokasi: surat.penerimaDivisi ?? '-', petugas: 'Penerima', catatan: 'Surat telah diterima tujuan', isCompleted: true));
-      }
+      timeline.add(TimelineItem(status: 'Dalam Perjalanan', tanggal: inTransit ? formattedDate : '-', lokasi: inTransit ? 'Sortir' : '-', petugas: surat.kurirId ?? '-', catatan: inTransit ? 'Menuju lokasi penerima' : 'Belum diproses', isCompleted: inTransit));
+      timeline.add(TimelineItem(status: 'Diterima', tanggal: '-', lokasi: surat.penerimaTujuan ?? '-', petugas: '-', catatan: 'Belum diterima', isCompleted: false));
     }
     return timeline;
   }
@@ -94,7 +121,7 @@ class _TrackingPageState extends State<TrackingPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Masukkan nomor surat terlebih dahulu'), backgroundColor: Colors.red[600]));
       return;
     }
-    FocusScope.of(context).unfocus();
+    FocusScope.of(context).unfocus(); // Menutup keyboard
     setState(() { _isSearching = true; _showResult = false; });
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
@@ -115,20 +142,18 @@ class _TrackingPageState extends State<TrackingPage> {
   }
 
   Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'terkirim': case 'diterima': return Colors.green.shade600;
-      case 'menunggu kurir': case 'dalam perjalanan': return Colors.orange.shade600;
-      case 'pending': return Colors.grey.shade600;
-      default: return posBlue;
-    }
+    final s = status.toLowerCase();
+    if (s.contains('terkirim') || s.contains('diterima')) return Colors.green.shade600;
+    if (s.contains('menunggu') || s.contains('dalam perjalanan')) return posOrange;
+    if (s.contains('pending')) return Colors.grey.shade600;
+    return posBlue;
   }
 
   Color _getSifatColor(String sifat) {
-    switch (sifat.toLowerCase()) {
-      case 'penting': return Colors.red.shade600;
-      case 'segera': return posOrange;
-      default: return Colors.blue.shade600;
-    }
+    final s = sifat.toLowerCase();
+    if (s.contains('penting')) return Colors.red.shade600;
+    if (s.contains('segera')) return posOrange;
+    return Colors.blue.shade600;
   }
 
   @override
@@ -141,16 +166,23 @@ class _TrackingPageState extends State<TrackingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: AnimatedSwitcher(
+      appBar: AppBar(
+        title: Text('Lacak Kiriman Surat', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        // Warna diambil dari tema global
+      ),
+      // ✅ Body dibungkus SingleChildScrollView untuk anti-overflow
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            _buildSearchCard(),
+            const SizedBox(height: 24),
+            AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               child: _buildBodyContent(),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -163,49 +195,14 @@ class _TrackingPageState extends State<TrackingPage> {
     return _buildEmptyState();
   }
 
-  SliverAppBar _buildSliverAppBar() {
-    return SliverAppBar(
-      backgroundColor: posBlue,
-      foregroundColor: Colors.white,
-      pinned: true,
-      expandedHeight: 260.0,
-      flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
-        title: Text('Lacak Kiriman Surat', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [posBlue, posBlue.withOpacity(0.7)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 50, left: 20,
-                child: Row(
-                  children: [
-                    Image.asset('assets/images/logo_pos_white.png', height: 25, errorBuilder: (c,e,s) => const SizedBox()),
-                    const SizedBox(width: 10),
-                    Text("POS IND", style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24))
-                  ],
-                ),
-              ),
-              Padding(padding: const EdgeInsets.only(top: 110.0), child: _buildSearchCard()),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildSearchCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _searchController,
@@ -229,12 +226,7 @@ class _TrackingPageState extends State<TrackingPage> {
                 onPressed: _isSearching ? null : _searchSurat,
                 icon: const Icon(Icons.search, size: 20),
                 label: Text('Lacak Kiriman', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: posOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+                // Style diambil dari tema global
               ),
             ),
           ),
@@ -243,12 +235,11 @@ class _TrackingPageState extends State<TrackingPage> {
     );
   }
   
-   Widget _buildEmptyState() {
+  Widget _buildEmptyState() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
       child: Column(
         children: [
-          const SizedBox(height: 50),
           Image.asset('assets/images/kurir.png', height: 180, errorBuilder: (context, error, stackTrace) => Icon(Icons.local_shipping_outlined, size: 120, color: Colors.grey[300])), 
           const SizedBox(height: 24),
           Text(
@@ -286,10 +277,9 @@ class _TrackingPageState extends State<TrackingPage> {
   Widget _buildNotFoundContent() {
     return FadeIn(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
         child: Column(
           children: [
-            const SizedBox(height: 50),
             Icon(Icons.search_off_rounded, size: 100, color: Colors.grey[300]),
             const SizedBox(height: 24),
             Text(
@@ -312,15 +302,12 @@ class _TrackingPageState extends State<TrackingPage> {
   Widget _buildResultContent() {
     final List<TimelineItem> timeline = _generateTimeline(_foundSurat!);
     return FadeInUp(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildSuratDetailCard(),
-            const SizedBox(height: 16),
-            _buildTimelineCard(timeline),
-          ],
-        ),
+      child: Column(
+        children: [
+          _buildSuratDetailCard(),
+          const SizedBox(height: 16),
+          _buildTimelineCard(timeline),
+        ],
       ),
     );
   }
@@ -372,13 +359,12 @@ class _TrackingPageState extends State<TrackingPage> {
                   children: [
                     _buildInfoChip(_foundSurat!.status, _getStatusColor(_foundSurat!.status)),
                     _buildInfoChip(_foundSurat!.sifatSurat, _getSifatColor(_foundSurat!.sifatSurat)),
-                    _buildInfoChip('${_foundSurat!.berat} gr', Colors.grey.shade600),
                   ],
                 ),
                 const Divider(height: 24),
-                _buildDetailRow('Pengirim', '${_foundSurat!.pengirimAsal} - ${_foundSurat!.pengirimDivisi}'),
+                _buildDetailRow('Pengirim', _foundSurat!.pengirimAsal),
                 const SizedBox(height: 12),
-                _buildDetailRow('Penerima', '${_foundSurat!.penerimaDivisi} - ${_foundSurat!.penerimaDepartemen}'),
+                _buildDetailRow('Penerima', _foundSurat!.penerimaTujuan ?? '-'),
               ],
             ),
           )

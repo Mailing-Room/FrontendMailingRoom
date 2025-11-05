@@ -1,87 +1,67 @@
-// Path: lib/models/surat.dart
-
 class Surat {
-  final String? id;
+  final String id;
   final String nomor;
   final String perihal;
-  final String pengirimAsal;
-  final String pengirimDivisi;
-  final String pengirimDepartemen;
-  final String? penerimaTujuan;
-  final String? penerimaDivisi;
-  final String? penerimaDepartemen;
   final String jenisSurat;
-  final String deskripsiSurat; // Tambahan
-  final String sifatSurat; // Tambahan
-  final String? fileSuratUrl; // Tambahan
-  final String? lpSuratUrl; // Tambahan
-  final double? berat; // Tambahan
+  final String sifatSurat;
+  final String? kategoriId;
+  final String? deskripsiSurat;
+  final String? fileSuratUrl;
   final String status;
-  final String tanggal;
+  final String pengirimId;
+  final String? penerimaId;
+  final String? kurirId;
+  final String tanggal; // Akan kita map dari CreatedAt
+
+  // Ini adalah data yang tidak ada di model Go, tapi dibutuhkan oleh UI.
+  // Data ini perlu di-POPULATE oleh backend Go Anda.
+  final String pengirimAsal;
+  final String? penerimaTujuan;
 
   Surat({
-    this.id,
+    required this.id,
     required this.nomor,
     required this.perihal,
-    required this.pengirimAsal,
-    required this.pengirimDivisi,
-    required this.pengirimDepartemen,
-    this.penerimaTujuan,
-    this.penerimaDivisi,
-    this.penerimaDepartemen,
     required this.jenisSurat,
-    required this.deskripsiSurat,
     required this.sifatSurat,
+    this.kategoriId,
+    this.deskripsiSurat,
     this.fileSuratUrl,
-    this.lpSuratUrl,
-    this.berat,
     required this.status,
+    required this.pengirimId,
+    this.penerimaId,
+    this.kurirId,
     required this.tanggal,
+    
+    // Data tambahan
+    required this.pengirimAsal,
+    this.penerimaTujuan,
   });
 
-  // Perbarui metode fromMap
-  factory Surat.fromMap(Map<String, dynamic> map) {
+  // Fungsi ini mengubah data JSON Naskah dari server Go menjadi object Surat
+  factory Surat.fromJson(Map<String, dynamic> json) {
     return Surat(
-      id: map['id'],
-      nomor: map['nomor'],
-      perihal: map['perihal'],
-      pengirimAsal: map['pengirimAsal'],
-      pengirimDivisi: map['pengirimDivisi'],
-      pengirimDepartemen: map['pengirimDepartemen'],
-      penerimaTujuan: map['penerimaTujuan'],
-      penerimaDivisi: map['penerimaDivisi'],
-      penerimaDepartemen: map['penerimaDepartemen'],
-      jenisSurat: map['jenisSurat'],
-      deskripsiSurat: map['deskripsiSurat'],
-      sifatSurat: map['sifatSurat'],
-      fileSuratUrl: map['fileSuratUrl'],
-      lpSuratUrl: map['lpSuratUrl'],
-      berat: map['berat'],
-      status: map['status'],
-      tanggal: map['tanggal'],
-    );
-  }
+      id: json['naskah_id'],
+      nomor: json['noSurat'],
+      perihal: json['judul'],
+      jenisSurat: json['jenisNaskah'],
+      sifatSurat: json['sifatNaskah'],
+      kategoriId: json['kategori_id'],
+      deskripsiSurat: json['deskripsi'],
+      fileSuratUrl: json['filePath'],
+      status: json['status'],
+      pengirimId: json['pengirim_id'],
+      penerimaId: json['penerima_id'],
+      kurirId: json['kurir_id'],
+      tanggal: json['createdAt'], // Map 'tanggal' ke 'createdAt'
 
-  // Perbarui metode toMap
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'nomor': nomor,
-      'perihal': perihal,
-      'pengirimAsal': pengirimAsal,
-      'pengirimDivisi': pengirimDivisi,
-      'pengirimDepartemen': pengirimDepartemen,
-      'penerimaTujuan': penerimaTujuan,
-      'penerimaDivisi': penerimaDivisi,
-      'penerimaDepartemen': penerimaDepartemen,
-      'jenisSurat': jenisSurat,
-      'deskripsiSurat': deskripsiSurat,
-      'sifatSurat': sifatSurat,
-      'fileSuratUrl': fileSuratUrl,
-      'lpSuratUrl': lpSuratUrl,
-      'berat': berat,
-      'status': status,
-      'tanggal': tanggal,
-    };
+      // ==========================================================
+      // PENTING: Backend Go Anda harus mengirim data ini juga.
+      // Jika 'pengirim_id' = 'user-123', Go harus mencari 'user-123'
+      // dan mengirim namanya sebagai 'nama_pengirim'
+      // ==========================================================
+      pengirimAsal: json['nama_pengirim'] ?? 'Pengirim Tidak Dikenal',
+      penerimaTujuan: json['nama_penerima'] ?? '-',
+    );
   }
 }

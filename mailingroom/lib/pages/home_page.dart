@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Import dari project Anda (pastikan path-nya benar)
-// Sesuaikan dengan struktur folder Anda jika berbeda
+// Import dari project Anda
 import '../models/surat.dart';
 import '../services/database_service.dart';
 import '../widgets/section_header.dart';
@@ -16,9 +15,12 @@ import 'profil_page.dart';
 import 'surat_rangkuman_page.dart';
 import 'tracking_page.dart' hide Surat;
 
+// Import halaman dashboard kurir
+import 'dashboard/kurir_dashboard.dart';
+import 'qr_scanner_page.dart'; // Import untuk scanner kurir
 
 //====================================================================//
-//                           KELAS BANTUAN                            //
+//                        KELAS BANTUAN (BerandaContent)
 //====================================================================//
 
 class QuickAction {
@@ -40,7 +42,7 @@ class QuickAction {
 }
 
 //====================================================================//
-//                        KONTEN TAB BERANDA                          //
+//                        KONTEN TAB BERANDA (PENGIRIM)
 //====================================================================//
 
 class BerandaContent extends StatelessWidget {
@@ -130,7 +132,7 @@ class BerandaContent extends StatelessWidget {
                 mainAxisSpacing: 16,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.8, // Sedikit disesuaikan untuk memberi ruang
+                childAspectRatio: 1.8, 
                 children: [
                   _statCard('Surat Masuk', '1', posBlue),
                   _statCard('Surat Keluar', '1', posOrange),
@@ -223,7 +225,6 @@ class BerandaContent extends StatelessWidget {
     );
   }
 
-  // WIDGET KARTU STATISTIK DENGAN PERBAIKAN OVERFLOW
   Widget _statCard(String title, String value, Color indicatorColor) {
     return Container(
       decoration: BoxDecoration(
@@ -251,20 +252,19 @@ class BerandaContent extends StatelessWidget {
               ),
             ),
           ),
-          Expanded( // Menggunakan Expanded agar Padding mengisi sisa ruang
+          Expanded( 
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0), // Padding disesuaikan
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0), 
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center, // Pusatkan konten secara vertikal
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // FittedBox akan secara otomatis mengecilkan teks agar pas
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
                       value,
                       style: GoogleFonts.inter(
-                        fontSize: 26, // Ukuran font awal, akan mengecil jika perlu
+                        fontSize: 26, 
                         fontWeight: FontWeight.bold,
                         color: indicatorColor,
                       ),
@@ -289,11 +289,13 @@ class BerandaContent extends StatelessWidget {
 }
 
 //====================================================================//
-//                HALAMAN UTAMA (STATEFUL WIDGET SHELL)                 //
+//                HALAMAN UTAMA (STATEFUL WIDGET SHELL)
 //====================================================================//
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required bool isKurir});
+  // ✅ Menerima 'role' sebagai String, bukan 'isKurir'
+  final String role;
+  const HomePage({super.key, required this.role});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -306,35 +308,68 @@ class _HomePageState extends State<HomePage> {
   static const Color posOrange = Color(0xFFF37021);
   static const Color posBlue = Color(0xFF00529C);
 
-  void _onItemTapped(int index, {int subTabIndex = 0}) {
+  void _onItemTapped(int index) {
+    setState(() {
+      if (index != 1) _initialSuratTabIndex = 0;
+      _selectedIndex = index;
+    });
+  }
+  
+  // ✅ Fungsi 'onNavigateToTab' untuk 'BerandaContent'
+  void _navigateToSuratTab(int index, {int subTabIndex = 0}) {
     setState(() {
       _selectedIndex = index;
       _initialSuratTabIndex = subTabIndex;
     });
   }
 
+  void _openScanner() {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerPage()));
+  }
+
+  // ✅ Fungsi untuk memilih dashboard yang benar
+  Widget _getDashboardForRole() {
+    switch (widget.role) {
+      case 'kurir':
+        return const KurirDashboard();
+      case 'pengirim':
+        return BerandaContent(onNavigateToTab: _navigateToSuratTab);
+      case 'penerima':
+        // TODO: Ganti ini dengan PenerimaDashboard jika sudah ada
+        return const Center(child: Text("Ini Dashboard Penerima")); 
+      default:
+        return const Center(child: Text('Peran tidak dikenal'));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = <Widget>[
-      BerandaContent(onNavigateToTab: _onItemTapped),
+      _getDashboardForRole(), // ✅ Memanggil dashboard yang sesuai
       SuratRangkumanPage(initialTabIndex: _initialSuratTabIndex),
       const NotifikasiPage(),
       const ProfilPage(),
     ];
 
+    bool isKurir = widget.role == 'kurir';
+
+    // Tampilan untuk Kurir
+    if (isKurir) {
+      return Scaffold(
+        body: pages[_selectedIndex],
+        bottomNavigationBar: _buildCourierNavBar(),
+        floatingActionButton: _buildCourierFAB(),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      );
+    }
+
+    // Tampilan untuk Pengirim (biasa)
     String appBarTitle;
     switch (_selectedIndex) {
-      case 1:
-        appBarTitle = 'Rangkuman Surat';
-        break;
-      case 2:
-        appBarTitle = 'Notifikasi';
-        break;
-      case 3:
-        appBarTitle = 'Profil Saya';
-        break;
-      default:
-        appBarTitle = 'mailingroom';
+      case 1: appBarTitle = 'Rangkuman Surat'; break;
+      case 2: appBarTitle = 'Notifikasi'; break;
+      case 3: appBarTitle = 'Profil Saya'; break;
+      default: appBarTitle = 'mailingroom';
     }
 
     return Scaffold(
@@ -354,10 +389,10 @@ class _HomePageState extends State<HomePage> {
                   if (_selectedIndex == 0)
                     Row(
                       children: [
-                        // Ganti dengan SvgPicture.asset jika Anda menggunakan SVG
                         Image.asset(
-                          'assets/images/POSIND_2023.svg.png', 
+                          'assets/images/logo_pos.png', // ✅ Pastikan path logo benar
                           height: 35.0,
+                          errorBuilder: (c, e, s) => const Icon(Icons.all_inbox),
                         ),
                         const SizedBox(width: 12),
                         Text(
@@ -406,22 +441,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: pages.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => _onItemTapped(index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: posBlue,
-        unselectedItemColor: Colors.grey[600],
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.article_outlined), label: 'Surat'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_none), label: 'Notifikasi'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profil'),
-        ],
-      ),
+      bottomNavigationBar: _buildRegularNavBar(),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
               onPressed: () {
@@ -438,6 +458,96 @@ class _HomePageState extends State<HomePage> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  // --- Helper Widgets untuk Navigasi ---
+
+  Widget _buildRegularNavBar() {
+    return BottomNavigationBar(
+      currentIndex: _selectedIndex,
+      onTap: _onItemTapped,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: posBlue,
+      unselectedItemColor: Colors.grey[600],
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Beranda'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.article_outlined), label: 'Surat'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_none), label: 'Notifikasi'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline), label: 'Profil'),
+      ],
+    );
+  }
+
+  Widget _buildCourierFAB() {
+    return FloatingActionButton(
+      onPressed: _openScanner,
+      backgroundColor: posOrange,
+      elevation: 4.0,
+      shape: const CircleBorder(),
+      child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
+    );
+  }
+  
+  Widget _buildCourierNavBar() {
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8.0,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: <Widget>[
+          _buildNavBarItem(icon: Icons.home_outlined, label: 'Beranda', index: 0),
+          _buildNavBarItem(icon: Icons.article_outlined, label: 'Surat', index: 1),
+          const SizedBox(width: 40),
+          _buildNavBarItem(icon: Icons.notifications_none, label: 'Notifikasi', index: 2, hasBadge: true, badgeCount: 3),
+          _buildNavBarItem(icon: Icons.person_outline, label: 'Profil', index: 3),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavBarItem({required IconData icon, required String label, required int index, bool hasBadge = false, int badgeCount = 0}) {
+    bool isSelected = _selectedIndex == index;
+    return Expanded(
+      child: InkWell(
+        onTap: () => _onItemTapped(index),
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(icon, color: isSelected ? posOrange : Colors.grey[600]),
+                  if (hasBadge)
+                    Positioned(
+                      top: -4, right: -8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                        child: Text(badgeCount.toString(), style: const TextStyle(color: Colors.white, fontSize: 10)),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: isSelected ? posOrange : Colors.grey[600],
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
