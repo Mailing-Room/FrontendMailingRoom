@@ -13,37 +13,31 @@ class DashboardSelectionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-
-    // Kode ini akan mendengarkan status login
-    return StreamBuilder<MyUser?>(
-      stream: authService.userStream,
-      builder: (context, snapshot) {
+    return Consumer<AuthService>(
+      builder: (context, authService, child) {
         
-        // 1. Saat 'AuthService' sedang mengecek token (jika ada)
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (authService.isCheckingLogin) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
-        // 2. Jika 'AuthService' mengirim data user (artinya login berhasil)
-        if (snapshot.hasData && snapshot.data != null) {
-          final user = snapshot.data!;
+        if (authService.currentUser != null) {
+          final user = authService.currentUser!;
           
           switch (user.role) {
             case 'admin':
               return const AdminDashboard();
+            
+            // ✅ PERBAIKAN: Kirim seluruh object 'user' ke HomePage
             case 'kurir':
-              return const HomePage(role: 'kurir');
             case 'pengirim':
-              return const HomePage(role: 'pengirim');
             case 'penerima':
-              return const HomePage(role: 'penerima');
+              return HomePage(user: user); 
+              
             default:
               return const LoginPage();
           }
         }
         
-        // 3. Jika 'AuthService' mengirim 'null' (artinya belum login)
         return const LoginPage();
       },
     );

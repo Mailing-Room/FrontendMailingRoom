@@ -14,6 +14,9 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  // ✅ Tambahkan controller baru
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedRole;
@@ -21,7 +24,6 @@ class _RegisterPageState extends State<RegisterPage> {
   String _errorMessage = '';
 
   Future<void> _register() async {
-    // Validasi form dan peran
     if (!_formKey.currentState!.validate() || _isLoading) return;
     
     if (_selectedRole == null) {
@@ -34,11 +36,13 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       
-      // Panggil fungsi register yang baru
+      // ✅ Panggil fungsi register dengan parameter baru
       await authService.register(
         _emailController.text,
         _passwordController.text,
         _selectedRole!,
+        _nameController.text, // Kirim nama
+        _phoneController.text, // Kirim telepon
       );
 
       if (mounted) {
@@ -77,27 +81,35 @@ class _RegisterPageState extends State<RegisterPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // ✅ Tambahkan Form Nama
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Nama Lengkap', prefixIcon: Icon(Icons.person_outline)),
+                  validator: (value) => (value == null || value.isEmpty) ? 'Nama tidak boleh kosong' : null,
+                ),
+                const SizedBox(height: 16),
+                
+                // ✅ Tambahkan Form Telepon
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(labelText: 'Nomor Telepon', prefixIcon: Icon(Icons.phone_outlined)),
+                  validator: (value) => (value == null || value.isEmpty) ? 'Telepon tidak boleh kosong' : null,
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Email tidak boleh kosong';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null || value.isEmpty) ? 'Email tidak boleh kosong' : null,
+                  keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
-                  validator: (value) {
-                    if (value == null || value.isEmpty || value.length < 6) {
-                      return 'Password minimal 6 karakter';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null || value.length < 6) ? 'Password minimal 6 karakter' : null,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -106,7 +118,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     labelText: 'Pilih Peran',
                     prefixIcon: Icon(Icons.person_outline),
                   ),
-                  // Sesuaikan peran ini dengan 'role_id' di backend Go Anda
                   items: ['pengirim', 'kurir', 'admin'] 
                       .map((role) => DropdownMenuItem(
                             value: role,
@@ -118,12 +129,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       _selectedRole = value;
                     });
                   },
-                  validator: (value) {
-                    if (value == null) {
-                      return 'Pilih peran pengguna';
-                    }
-                    return null;
-                  },
+                  validator: (value) => (value == null) ? 'Pilih peran pengguna' : null,
                 ),
                 const SizedBox(height: 20),
                 if (_errorMessage.isNotEmpty)

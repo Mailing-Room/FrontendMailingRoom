@@ -3,7 +3,7 @@
 import '../models/surat.dart'; // Memanggil model Surat yang sudah benar
 
 class DatabaseService {
-  // ✅ Data surat dummy yang sudah dicocokkan dengan model Surat (Naskah)
+  // Data surat dummy yang sudah dicocokkan dengan model Surat (Naskah)
   final List<Surat> _dummySuratList = [
     Surat(
       id: 'naskah_id_1',

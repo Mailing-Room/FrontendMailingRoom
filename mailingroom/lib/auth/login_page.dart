@@ -120,12 +120,6 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Email dummy:\nkurir@pos.id | pengirim@pos.id | admin@pos.id',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey)
-                ),
               ],
             ),
           ),

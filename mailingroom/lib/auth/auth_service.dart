@@ -8,22 +8,39 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user.dart';
 
 class AuthService with ChangeNotifier {
-  final StreamController<MyUser?> _userController = StreamController<MyUser?>.broadcast();
-  Stream<MyUser?> get userStream => _userController.stream;
   MyUser? _currentUser;
+  MyUser? get currentUser => _currentUser;
   
-  final String _baseUrl = 'https://mailingroom-db0c7a47e986.herokuapp.com';
+  bool _isCheckingLogin = true;
+  bool get isCheckingLogin => _isCheckingLogin;
+
+  // URL base diubah ke /api
+  final String _baseUrl = 'https://mailingroom-db0c7a47e986.herokuapp.com/api'; 
   final _storage = const FlutterSecureStorage();
   String? _token;
 
   AuthService() {
-    // INI ADALAH KUNCI PERBAIKAN LOADING:
-    // Langsung kirim status 'null' (belum login) saat aplikasi dimulai.
-    _userController.add(null);
+    _tryAutoLogin();
+  }
+
+  Future<void> _tryAutoLogin() async {
+    _token = await _storage.read(key: 'auth_token');
+    
+    if (_token == null) {
+      _isCheckingLogin = false;
+      notifyListeners();
+      return;
+    }
+    
+    // TODO: Idealnya, panggil endpoint /verify-token di sini
+    
+    _isCheckingLogin = false;
+    notifyListeners();
   }
 
   Future<void> login(String email, String password) async {
-    final url = Uri.parse('$_baseUrl/login');
+    // PERBAIKAN: Endpoint diubah ke /public/login
+    final url = Uri.parse('$_baseUrl/public/login'); 
     try {
       final response = await http.post(
         url,
@@ -37,8 +54,7 @@ class AuthService with ChangeNotifier {
         _token = data['token'];
         if (_token == null) throw Exception('Token tidak ditemukan');
         await _storage.write(key: 'auth_token', value: _token);
-        _userController.add(_currentUser);
-        notifyListeners();
+        notifyListeners(); 
       } else {
         final errorData = jsonDecode(response.body);
         throw Exception(errorData['message'] ?? 'Login Gagal');
@@ -48,16 +64,26 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  Future<void> register(String email, String password, String role) async {
-    final url = Uri.parse('$_baseUrl/register');
+  // PERBAIKAN: Endpoint register juga disesuaikan
+  Future<void> register(String email, String password, String role, String name, String phone) async {
+    // Sesuaikan dengan endpoint register dari backend Anda
+    final url = Uri.parse('$_baseUrl/admin/inputuser'); 
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
+        // TODO: Backend mungkin butuh 'Authorization' header jika ini rute admin
         body: jsonEncode({
           'email': email,
           'password': password,
           'role_id': role,
+          'name': name, 
+          'phone': phone, 
+          'divisi_id': '', 
+          'office_id': '',
+          'departemen_id': '',
+          'sub_direktorat_id': '',
+          'jabatan': '',
         }),
       );
       if (response.statusCode != 201 && response.statusCode != 200) {
@@ -73,13 +99,6 @@ class AuthService with ChangeNotifier {
     _currentUser = null;
     _token = null;
     await _storage.delete(key: 'auth_token');
-    _userController.add(null);
-    notifyListeners();
-  }
-  
-  @override
-  void dispose() {
-    _userController.close();
-    super.dispose();
+    notifyListeners(); 
   }
 }

@@ -2,28 +2,38 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mailingroom/models/user.dart';
 import 'package:mailingroom/pages/dashboard/dashboard_selection_page.dart';
+import 'package:mailingroom/pages/dashboard/kurir_dashboard.dart';
 import 'package:provider/provider.dart';
+
+// Import untuk format tanggal
+import 'package:intl/date_symbol_data_local.dart';
 
 // Import service dan provider
 import 'package:mailingroom/auth/auth_service.dart';
 import 'package:mailingroom/providers/surat_provider.dart';
 
-void main() {
+void main() async { // Ubah jadi async
+  // Pastikan Flutter siap
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inisialisasi format tanggal untuk 'id_ID' (Bahasa Indonesia)
+  await initializeDateFormatting('id_ID', null);
+  
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Definisikan warna tema di sini agar mudah diakses
+  // Definisikan warna tema
   static const Color posBlue = Color(0xFF00529C);
   static const Color posOrange = Color(0xFFF37021);
   static const Color lightGrey = Color(0xFFF0F0F0);
 
   @override
   Widget build(BuildContext context) {
-    // Menggunakan MultiProvider untuk menyiapkan state management
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
@@ -33,11 +43,7 @@ class MyApp extends StatelessWidget {
         title: 'Mailingroom POS IND',
         debugShowCheckedModeBanner: false,
 
-        // ======================================================= //
-        // ==     TEMA GLOBAL UNTUK NUANSA PT POS INDONESIA     == //
-        // ======================================================= //
         theme: ThemeData(
-          // 1. Skema Warna Utama
           colorScheme: ColorScheme.fromSeed(
             seedColor: posBlue,
             primary: posBlue,
@@ -45,12 +51,10 @@ class MyApp extends StatelessWidget {
             background: const Color(0xFFF8F9FA),
           ),
           
-          // 2. Terapkan Font Default ke Seluruh Aplikasi
           textTheme: Theme.of(context).textTheme.merge(
             GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme)
           ),
 
-          // 3. Kustomisasi Gaya Widget Default
           appBarTheme: AppBarTheme(
             backgroundColor: posBlue,
             foregroundColor: Colors.white,
@@ -78,7 +82,7 @@ class MyApp extends StatelessWidget {
           ),
           
           floatingActionButtonTheme: const FloatingActionButtonThemeData(
-            backgroundColor: posOrange, // Tombol FAB berwarna oranye
+            backgroundColor: posOrange,
             foregroundColor: Colors.white,
           ),
 
@@ -97,22 +101,24 @@ class MyApp extends StatelessWidget {
           ),
           
           bottomNavigationBarTheme: BottomNavigationBarThemeData(
-            selectedItemColor: posOrange, // Item navbar yang aktif berwarna oranye
+            selectedItemColor: posOrange,
             unselectedItemColor: Colors.grey[600],
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           ),
 
+          // PERBAIKAN: Menggunakan 'TabBarThemeData' dan properti 'indicator'
           tabBarTheme: TabBarThemeData(
-            labelColor: posOrange, // Teks tab yang aktif berwarna oranye
+            labelColor: posOrange,
             unselectedLabelColor: Colors.grey[600],
-            indicatorColor: posOrange, // Garis bawah/indikator berwarna oranye
+            indicator: const UnderlineTabIndicator(
+              borderSide: BorderSide(color: posOrange, width: 3),
+            ),
           ),
           
           useMaterial3: true,
         ),
 
-        // Halaman pertama adalah "penjaga" yang akan menampilkan LoginPage
-        home: const DashboardSelectionPage(),
+        home: KurirDashboard(user: MyUser(uid: '', email: '', role: '', nama: '')),
       ),
     );
   }

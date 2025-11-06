@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:mailingroom/auth/auth_service.dart'; // ✅ Import AuthService
 
 // Import yang diperlukan untuk data surat
 import '../../models/surat.dart';
@@ -69,7 +70,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             backgroundColor: lightBg,
             body: Row(
               children: [
-                _buildSideBar(isMobile: false),
+                _buildSideBar(context, isMobile: false), // Kirim context
                 Expanded(child: _buildMainContent(isMobile: false)),
               ],
             ),
@@ -83,14 +84,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
             backgroundColor: lightBg,
             appBar: AppBar(
               backgroundColor: Colors.white,
-              foregroundColor: Colors.black87,
+              foregroundColor: Colors.black87, // Warna ikon & font hitam
               elevation: 1.0,
               title: Text(_getPageTitle(), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black87)),
               leading: IconButton(
                 icon: const Icon(Icons.menu),
                 onPressed: () {
-                  // ✅ TUTUP KEYBOARD SEBELUM BUKA SIDEBAR
-                  FocusScope.of(context).unfocus(); 
+                  FocusScope.of(context).unfocus(); // Tutup keyboard sblm buka menu
                   setState(() {
                     _isSidebarExpanded = !_isSidebarExpanded;
                   });
@@ -105,7 +105,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     onTap: _closeSidebar,
                     child: Container(color: Colors.black.withOpacity(0.5)),
                   ),
-                  _buildSideBar(isMobile: true),
+                  _buildSideBar(context, isMobile: true), // Kirim context
                 ]
               ],
             ),
@@ -124,13 +124,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
       case AdminPage.cetakLaporan: return 'Cetak Laporan';
     }
   }
-
-  Widget _buildSideBar({required bool isMobile}) {
+  
+  Widget _buildSideBar(BuildContext context, {required bool isMobile}) { // ✅ Terima context
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       width: _isSidebarExpanded ? 250 : (isMobile ? 0 : 70),
-      color: posBlue,
+      color: posBlue, 
       child: Column(
         children: [
           // --- HEADER SIDEBAR ---
@@ -139,7 +139,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Row(
               mainAxisAlignment: _isSidebarExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
               children: [
-                Image.asset('assets/images/POSIND_2023.svg.png', height: 32, errorBuilder: (c,e,s) => const Icon(Icons.mark_email_read, color: Colors.white, size: 32)),
+                Image.asset('assets/images/logo_pos_white.png', height: 32, errorBuilder: (c,e,s) => const Icon(Icons.mark_email_read, color: Colors.white, size: 32)),
                 if (_isSidebarExpanded) ...[
                   const SizedBox(width: 12),
                   Expanded(
@@ -157,38 +157,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
           
-          // ✅ DAFTAR MENU (SCROLLABLE)
+          // --- DAFTAR MENU (SCROLLABLE) ---
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
                   const SizedBox(height: 16),
-                  _buildSideBarItem(title: 'Dashboard', icon: Icons.dashboard_outlined, page: AdminPage.dashboard, isMobile: isMobile),
-                  _buildSideBarItem(title: 'Kelola Surat', icon: Icons.drafts_outlined, page: AdminPage.kelolaSurat, isMobile: isMobile),
-                  _buildSideBarItem(title: 'Kelola User', icon: Icons.people_outline, page: AdminPage.kelolaUser, isMobile: isMobile),
-                  _buildSideBarItem(title: 'Kelola Divisi', icon: Icons.business_outlined, page: AdminPage.kelolaDivisi, isMobile: isMobile),
-                  _buildSideBarItem(title: 'Cetak Laporan', icon: Icons.print_outlined, page: AdminPage.cetakLaporan, isMobile: isMobile),
+                  _buildSideBarItem(context: context, title: 'Dashboard', icon: Icons.dashboard_outlined, page: AdminPage.dashboard, isMobile: isMobile),
+                  _buildSideBarItem(context: context, title: 'Kelola Surat', icon: Icons.drafts_outlined, page: AdminPage.kelolaSurat, isMobile: isMobile),
+                  _buildSideBarItem(context: context, title: 'Kelola User', icon: Icons.people_outline, page: AdminPage.kelolaUser, isMobile: isMobile),
+                  _buildSideBarItem(context: context, title: 'Kelola Divisi', icon: Icons.business_outlined, page: AdminPage.kelolaDivisi, isMobile: isMobile),
+                  _buildSideBarItem(context: context, title: 'Cetak Laporan', icon: Icons.print_outlined, page: AdminPage.cetakLaporan, isMobile: isMobile),
                 ],
               ),
             ),
           ),
-          
+
           // --- TOMBOL LOGOUT (MENEMPEL DI BAWAH) ---
           const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
           const SizedBox(height: 8),
-          _buildSideBarItem(title: 'Logout', icon: Icons.logout, page: null, isLogout: true, isMobile: isMobile),
+          _buildSideBarItem(context: context, title: 'Logout', icon: Icons.logout, page: null, isLogout: true, isMobile: isMobile),
           const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildSideBarItem({required String title, required IconData icon, required bool isMobile, AdminPage? page, bool isLogout = false}) {
+  Widget _buildSideBarItem({required BuildContext context, required String title, required IconData icon, required bool isMobile, AdminPage? page, bool isLogout = false}) { // ✅ Terima context
     final bool isSelected = _selectedPage == page;
     return InkWell(
       onTap: () {
         if (isLogout) {
-          print('Logout');
+          // ✅ PANGGIL FUNGSI SIGNOUT
+          Provider.of<AuthService>(context, listen: false).signOut();
         } else if (page != null) {
           setState(() {
             _selectedPage = page;
@@ -218,16 +219,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildMainContent({required bool isMobile}) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 16 : 32),
-      child: switch (_selectedPage) {
-        AdminPage.dashboard => _buildDashboardContent(isMobile: isMobile),
-        AdminPage.kelolaSurat => _buildKelolaSuratContent(isMobile: isMobile),
-        AdminPage.kelolaUser => _buildKelolaUserContent(isMobile: isMobile),
-        AdminPage.kelolaDivisi => _buildKelolaDivisiContent(isMobile: isMobile),
-        AdminPage.cetakLaporan => Center(child: Text('Halaman Cetak Laporan', style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold))),
-      },
-    );
+    // Dipisahkan agar `SingleChildScrollView` tidak ada di Kelola Surat
+    switch (_selectedPage) {
+      case AdminPage.dashboard:
+        return SingleChildScrollView(padding: EdgeInsets.all(isMobile ? 16 : 32), child: _buildDashboardContent(isMobile: isMobile));
+      case AdminPage.kelolaSurat:
+        return _buildKelolaSuratContent(isMobile: isMobile); // Halaman ini punya scroll sendiri
+      case AdminPage.kelolaUser:
+        return SingleChildScrollView(padding: EdgeInsets.all(isMobile ? 16 : 32), child: _buildKelolaUserContent(isMobile: isMobile));
+      case AdminPage.kelolaDivisi:
+        return SingleChildScrollView(padding: EdgeInsets.all(isMobile ? 16 : 32), child: _buildKelolaDivisiContent(isMobile: isMobile));
+      case AdminPage.cetakLaporan:
+        return Center(child: Text('Halaman Cetak Laporan', style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold)));
+    }
   }
 
   Widget _buildDashboardContent({required bool isMobile}) {
@@ -351,40 +355,47 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final statusOptions = ['Menunggu Kurir', 'Dalam Proses', 'Selesai Diantar', 'Gagal'];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!isMobile)
-          Text('Kelola Surat', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
-        
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: TextField(
-            controller: _suratSearchController,
-            decoration: InputDecoration(
-              labelText: 'Cari berdasarkan Perihal atau Pengirim',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _suratSearchQuery.isNotEmpty 
-                ? IconButton(
-                    icon: const Icon(Icons.clear), 
-                    onPressed: () {
-                      _suratSearchController.clear();
-                      FocusScope.of(context).unfocus(); // Tutup keyboard
-                    },
-                  ) 
-                : null,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-            ),
-            onSubmitted: (_) {
-              FocusScope.of(context).unfocus(); // Tutup keyboard saat Enter
-            },
+          padding: EdgeInsets.all(isMobile ? 0 : 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isMobile)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: Text('Kelola Surat', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
+                ),
+              TextField(
+                controller: _suratSearchController,
+                decoration: InputDecoration(
+                  labelText: 'Cari berdasarkan Perihal atau Pengirim',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _suratSearchQuery.isNotEmpty 
+                    ? IconButton(
+                        icon: const Icon(Icons.clear), 
+                        onPressed: () {
+                          _suratSearchController.clear();
+                          FocusScope.of(context).unfocus();
+                        },
+                      ) 
+                    : null,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
+                ),
+                onSubmitted: (_) {
+                  FocusScope.of(context).unfocus();
+                },
+              ),
+            ],
           ),
         ),
-        SizedBox(
-          width: double.infinity,
+        const SizedBox(height: 16),
+        Expanded(
           child: Card(
             elevation: 2,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: EdgeInsets.symmetric(horizontal: isMobile ? 0 : 0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: StreamBuilder<List<Surat>>(
@@ -450,7 +461,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
           ),
-        )
+        ),
+        const SizedBox(height: 32),
       ],
     );
   }
