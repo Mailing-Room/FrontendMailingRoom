@@ -1,5 +1,3 @@
-// lib/pages/tracking_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:timeline_tile/timeline_tile.dart';
@@ -7,7 +5,6 @@ import 'package:animate_do/animate_do.dart';
 import 'package:intl/intl.dart';
 
 // Import halaman dan model yang diperlukan
-import 'qr_scanner_page.dart';
 import '../models/surat.dart'; // Menggunakan model Surat terpusat
 
 class TimelineItem {
@@ -85,22 +82,6 @@ class _TrackingPageState extends State<TrackingPage> {
     super.didChangeDependencies();
   }
 
-  Future<void> _scanQRCode() async {
-    try {
-      final scannedData = await Navigator.push<String>(
-        context,
-        MaterialPageRoute(builder: (context) => const QRScannerPage()),
-      );
-      if (scannedData != null && scannedData.isNotEmpty) {
-        setState(() {
-          _searchController.text = scannedData;
-        });
-        _searchSurat();
-      }
-    } catch (e) {
-      print('Error saat membuka scanner: $e');
-    }
-  }
 
   List<TimelineItem> _generateTimeline(Surat surat) {
     List<TimelineItem> timeline = [];
@@ -209,10 +190,8 @@ class _TrackingPageState extends State<TrackingPage> {
             decoration: InputDecoration(
               hintText: 'Masukkan Nomor Surat...',
               hintStyle: GoogleFonts.poppins(color: Colors.grey[500]),
-              prefixIcon: IconButton(
-                icon: Icon(Icons.qr_code_scanner, color: posBlue),
-                onPressed: _scanQRCode,
-              ),
+              // Mengganti IconButton QR code dengan Icon statis
+              prefixIcon: Icon(Icons.receipt_long_outlined, color: posBlue.withOpacity(0.8)),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             ),
@@ -468,7 +447,7 @@ class _TrackingPageState extends State<TrackingPage> {
                             TextSpan(text: 'Petugas: ', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black54)),
                             TextSpan(text: item.petugas),
                           ],
-                           style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[800]),
+                            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[800]),
                         ),
                       ),
                        Text.rich(
@@ -477,7 +456,7 @@ class _TrackingPageState extends State<TrackingPage> {
                             TextSpan(text: 'Catatan: ', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.black54)),
                             TextSpan(text: item.catatan, style: const TextStyle(fontStyle: FontStyle.italic)),
                           ],
-                           style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+                            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
                         ),
                       ),
                     ],

@@ -12,7 +12,7 @@ import 'notifikasi_page.dart';
 import 'profil_page.dart';
 import 'surat_rangkuman_page.dart';
 import 'add_edit_surat_pages.dart';
-import 'qr_scanner_page.dart'; 
+
 
 class HomePage extends StatefulWidget {
   // ✅ PERBAIKAN: Terima 'MyUser' bukan 'String role'
@@ -42,10 +42,6 @@ class _HomePageState extends State<HomePage> {
       _selectedIndex = 1;
       _initialSuratTabIndex = subTabIndex;
     });
-  }
-
-  void _openScanner() {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const QRScannerPage()));
   }
 
   // Fungsi untuk memilih dashboard yang benar
@@ -80,7 +76,6 @@ class _HomePageState extends State<HomePage> {
       return Scaffold(
         body: pages[_selectedIndex],
         bottomNavigationBar: _buildCourierNavBar(),
-        floatingActionButton: _buildCourierFAB(),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       );
     }
@@ -156,16 +151,6 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: posOrange,
       tooltip: 'Kirim Surat',
       child: const Icon(Icons.add, color: Colors.white),
-    );
-  }
-
-  Widget _buildCourierFAB() {
-    return FloatingActionButton(
-      onPressed: _openScanner,
-      backgroundColor: posOrange,
-      elevation: 4.0,
-      shape: const CircleBorder(),
-      child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 28),
     );
   }
   

@@ -1,28 +1,24 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mailingroom/models/user.dart';
 import 'package:mailingroom/pages/dashboard/dashboard_selection_page.dart';
-import 'package:mailingroom/pages/dashboard/kurir_dashboard.dart';
+import 'package:mailingroom/pages/onboarding_page.dart';
 import 'package:provider/provider.dart';
-
-// Import untuk format tanggal
 import 'package:intl/date_symbol_data_local.dart';
 
 // Import service dan provider
 import 'package:mailingroom/auth/auth_service.dart';
 import 'package:mailingroom/providers/surat_provider.dart';
 
-void main() async { // Ubah jadi async
-  // Pastikan Flutter siap
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inisialisasi format tanggal untuk 'id_ID' (Bahasa Indonesia)
+  //Inisialisasi format tanggal untuk 'id_ID' (Bahasa Indonesia)
   await initializeDateFormatting('id_ID', null);
   
+  //Jalankan aplikasi
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -42,7 +38,6 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Mailingroom POS IND',
         debugShowCheckedModeBanner: false,
-
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: posBlue,
@@ -50,11 +45,9 @@ class MyApp extends StatelessWidget {
             secondary: posOrange,
             background: const Color(0xFFF8F9FA),
           ),
-          
           textTheme: Theme.of(context).textTheme.merge(
             GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme)
           ),
-
           appBarTheme: AppBarTheme(
             backgroundColor: posBlue,
             foregroundColor: Colors.white,
@@ -65,7 +58,6 @@ class MyApp extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: posOrange,
@@ -80,12 +72,6 @@ class MyApp extends StatelessWidget {
               ),
             ),
           ),
-          
-          floatingActionButtonTheme: const FloatingActionButtonThemeData(
-            backgroundColor: posOrange,
-            foregroundColor: Colors.white,
-          ),
-
           inputDecorationTheme: InputDecorationTheme(
             filled: true,
             fillColor: lightGrey,
@@ -99,26 +85,35 @@ class MyApp extends StatelessWidget {
             ),
             labelStyle: TextStyle(color: posBlue.withOpacity(0.8)),
           ),
-          
           bottomNavigationBarTheme: BottomNavigationBarThemeData(
             selectedItemColor: posOrange,
             unselectedItemColor: Colors.grey[600],
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           ),
-
-          // PERBAIKAN: Menggunakan 'TabBarThemeData' dan properti 'indicator'
           tabBarTheme: TabBarThemeData(
             labelColor: posOrange,
             unselectedLabelColor: Colors.grey[600],
-            indicator: const UnderlineTabIndicator(
-              borderSide: BorderSide(color: posOrange, width: 3),
-            ),
+            indicatorColor: posOrange,
           ),
-          
           useMaterial3: true,
         ),
-
-        home: KurirDashboard(user: MyUser(uid: '', email: '', role: '', nama: '')),
+        
+        // --- PERBAIKAN DI SINI ---
+        // Kita gunakan 'Builder' untuk mendapatkan context baru ('navContext')
+        // yang berada di bawah MaterialApp, sehingga bisa menemukan Navigator.
+        home: Builder(
+          builder: (BuildContext navContext) {
+            return OnboardingPage(
+              onOnboardingComplete: () {
+                // Gunakan 'navContext' yang baru untuk memanggil Navigator
+                Navigator.of(navContext).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const DashboardSelectionPage()),
+                );
+              },
+            );
+          },
+        ),
+        // --- AKHIR PERBAIKAN ---
       ),
     );
   }
