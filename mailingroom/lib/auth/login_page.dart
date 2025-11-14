@@ -64,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Logo
-                Image.asset('assets/images/logo_pos.png', height: 60, errorBuilder: (c,e,s) => const Icon(Icons.mark_email_read, size: 60)),
+                Image.asset('assets/image/POSIND_2023.png', height: 60, errorBuilder: (c,e,s) => const Icon(Icons.mark_email_read, size: 60)),
                 const SizedBox(height: 12),
                 Text(
                   'Selamat Datang',

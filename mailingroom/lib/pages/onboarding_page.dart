@@ -52,18 +52,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // --- Tombol Lewati ---
-            Align(
-              alignment: Alignment.topRight,
-              child: TextButton(
-                onPressed: widget.onOnboardingComplete,
-                child: Text(
-                  'Lewati',
-                  style: GoogleFonts.poppins(color: Colors.grey[600]),
-                ),
+            
+            // --- PERBAIKAN: Menambahkan Logo Kembali ---
+            Padding(
+              // Beri padding agar logo tidak menempel
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0), 
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Logo kiri, Tombol kanan
+                children: [
+                  // Logo Pos (Asumsi dari file lain)
+                  Image.asset(
+                    'assets/images/logo_pos.png', 
+                    height: 35.0, 
+                    errorBuilder: (c, e, s) => const Icon(Icons.all_inbox, size: 35.0),
+                  ),
+                  
+                  // Tombol Lewati
+                  TextButton(
+                    onPressed: widget.onOnboardingComplete,
+                    child: Text(
+                      'Lewati',
+                      style: GoogleFonts.poppins(color: Colors.grey[600]),
+                    ),
+                  ),
+                ],
               ),
             ),
-            
+            // --- AKHIR PERBAIKAN ---
+
             // --- Konten Halaman (Responsif) ---
             Expanded(
               flex: 5, // Beri lebih banyak ruang untuk konten
@@ -89,13 +105,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
 
-            // --- Navigasi Bawah (Responsif) ---
+            // --- Navigasi Bawah (Responsif & Anti-Overflow) ---
             Expanded(
               flex: 1, // Beri ruang lebih sedikit untuk navigasi
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                // Mengurangi padding dari 24.0 menjadi 16.0
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
+                  // Gunakan MainAxisSize.min agar Column tidak "rakus" tempat
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Indikator Dots
                     Row(
@@ -105,7 +124,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         (index) => _buildDot(index, context, posBlue),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    // Mengurangi SizedBox dari 24 menjadi 16
+                    const SizedBox(height: 16), 
                     
                     // Tombol Lanjut/Mulai
                     ElevatedButton(
@@ -172,65 +192,98 @@ class _OnboardingScreen extends StatelessWidget {
     required this.isActive,
   });
 
+  // Widget helper untuk ikon yang lebih menarik
+  Widget _buildIconDisplay(BuildContext context, Color color) {
+    return Container(
+      width: 250, // Lingkaran dekoratif besar
+      height: 250,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withOpacity(0.05), // Warna background tipis
+      ),
+      child: Center(
+        child: Container(
+          width: 180, // Lingkaran dalam
+          height: 180,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withOpacity(0.1), // Warna background lebih pekat
+          ),
+          child: Center(
+            child: Icon(
+              iconData,
+              size: 100, // Ukuran ikon
+              color: color.withOpacity(0.9), // Warna ikon
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Gambar/Ikon
-          // Hanya animasikan jika halaman aktif
-          isActive
-              ? FadeInDown(
-                  duration: const Duration(milliseconds: 600),
-                  child: Icon(
-                    iconData,
-                    size: 150,
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                  ),
-                )
-              : Icon(
-                  iconData,
-                  size: 150,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                ),
-          
-          const SizedBox(height: 48),
+    // Membungkus dengan SingleChildScrollView (FIX OVERFLOW)
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Gambar/Ikon
+            // Hanya animasikan jika halaman aktif
+            isActive
+                ? FadeInDown(
+                    duration: const Duration(milliseconds: 600),
+                    // Menggunakan helper ikon baru
+                    child: _buildIconDisplay(context, Theme.of(context).colorScheme.primary),
+                  )
+                : _buildIconDisplay(context, Theme.of(context).colorScheme.primary),
+            
+            const SizedBox(height: 48),
 
-          // Teks Judul
-          isActive
-              ? FadeInUp(
-                  duration: const Duration(milliseconds: 600),
-                  delay: const Duration(milliseconds: 200),
-                  child: Text(
+            // Teks Judul
+            isActive
+                ? FadeInUp(
+                    duration: const Duration(milliseconds: 600),
+                    delay: const Duration(milliseconds: 200),
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  )
+                : Text(
                     title,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                   ),
-                )
-              : Text(
-                  title,
-                  textAlign: TextAlign.center,
-                   style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                ),
-          
-          const SizedBox(height: 16),
+            
+            const SizedBox(height: 16),
 
-          // Teks Subjudul
-          isActive
-              ? FadeInUp(
-                  duration: const Duration(milliseconds: 600),
-                  delay: const Duration(milliseconds: 300),
-                  child: Text(
+            // Teks Subjudul
+            isActive
+                ? FadeInUp(
+                    duration: const Duration(milliseconds: 600),
+                    delay: const Duration(milliseconds: 300),
+                    child: Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  )
+                : Text(
                     subtitle,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.poppins(
@@ -238,16 +291,9 @@ class _OnboardingScreen extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
                   ),
-                )
-              : Text(
-                  subtitle,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-        ],
+            const SizedBox(height: 24), // Beri padding bawah jika di-scroll
+          ],
+        ),
       ),
     );
   }

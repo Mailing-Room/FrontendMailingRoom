@@ -139,7 +139,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Row(
               mainAxisAlignment: _isSidebarExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
               children: [
-                Image.asset('assets/images/logo_pos_white.png', height: 32, errorBuilder: (c,e,s) => const Icon(Icons.mark_email_read, color: Colors.white, size: 32)),
+                Image.asset('assets/images/POSIND_2023.png', height: 32, errorBuilder: (c,e,s) => const Icon(Icons.mark_email_read, color: Colors.white, size: 32)),
                 if (_isSidebarExpanded) ...[
                   const SizedBox(width: 12),
                   Expanded(

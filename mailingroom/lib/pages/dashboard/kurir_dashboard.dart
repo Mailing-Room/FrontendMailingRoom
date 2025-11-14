@@ -290,7 +290,7 @@ class _KurirDashboardState extends State<KurirDashboard>
           ),
           const SizedBox(height: 30),
           Image.asset(
-            'assets/images/kurir.png',
+            'assets/images/kurirpos.png',
             height: 100,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) =>

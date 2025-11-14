@@ -41,5 +41,6 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/POSIND_2023.svg.png
+    - assets/images/POSIND_2023.png
     - assets/images/kurir.png
+    - assets/images/kurirpos.png

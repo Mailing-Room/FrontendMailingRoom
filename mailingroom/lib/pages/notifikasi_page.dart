@@ -5,9 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
 
-// ❗ PENTING: Tambahkan package ini jika belum ada
-// flutter pub add collection intl
-
 // --- Model Data Notifikasi ---
 class Notifikasi {
   final String id;

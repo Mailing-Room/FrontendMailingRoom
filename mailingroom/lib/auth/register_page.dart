@@ -1,6 +1,5 @@
-// lib/auth/register_page.dart
-
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart'; // Impor ini diperlukan
 import 'package:mailingroom/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,35 +13,33 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
-  // ✅ Tambahkan controller baru
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String? _selectedRole;
+
   bool _isLoading = false;
   String _errorMessage = '';
 
   Future<void> _register() async {
-    if (!_formKey.currentState!.validate() || _isLoading) return;
+    // 1. Validasi form
+    if (!_formKey.currentState!.validate()) return;
     
-    if (_selectedRole == null) {
-      setState(() { _errorMessage = 'Harap pilih peran pengguna.'; });
-      return;
-    }
+    // Tutup keyboard
+    FocusScope.of(context).unfocus();
     
     setState(() { _isLoading = true; _errorMessage = ''; });
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       
-      // ✅ Panggil fungsi register dengan parameter baru
+      // 2. Panggil authService dengan parameter yang benar
+      // (email, password, name, phone)
       await authService.register(
         _emailController.text,
         _passwordController.text,
-        _selectedRole!,
-        _nameController.text, // Kirim nama
-        _phoneController.text, // Kirim telepon
+        _nameController.text,
+        _phoneController.text,
       );
 
       if (mounted) {
@@ -55,7 +52,12 @@ class _RegisterPageState extends State<RegisterPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString();
+          // Format pesan error
+          String message = e.toString();
+          if (message.startsWith('Exception: ')) {
+            message = message.substring('Exception: '.length);
+          }
+          _errorMessage = message;
         });
       }
     }
@@ -63,6 +65,15 @@ class _RegisterPageState extends State<RegisterPage> {
     if (mounted) {
       setState(() { _isLoading = false; });
     }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -81,15 +92,16 @@ class _RegisterPageState extends State<RegisterPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // ✅ Tambahkan Form Nama
+                // Form Nama
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(labelText: 'Nama Lengkap', prefixIcon: Icon(Icons.person_outline)),
                   validator: (value) => (value == null || value.isEmpty) ? 'Nama tidak boleh kosong' : null,
+                  textCapitalization: TextCapitalization.words,
                 ),
                 const SizedBox(height: 16),
                 
-                // ✅ Tambahkan Form Telepon
+                // Form Telepon
                 TextFormField(
                   controller: _phoneController,
                   decoration: const InputDecoration(labelText: 'Nomor Telepon', prefixIcon: Icon(Icons.phone_outlined)),
@@ -98,13 +110,21 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 16),
                 
+                // Form Email
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
-                  validator: (value) => (value == null || value.isEmpty) ? 'Email tidak boleh kosong' : null,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
+                    // Validasi @gmail.com sesuai backend
+                    if (!value.endsWith('@gmail.com')) return 'Email harus menggunakan @gmail.com';
+                    return null;
+                  },
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 16),
+                
+                // Form Password
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -112,35 +132,19 @@ class _RegisterPageState extends State<RegisterPage> {
                   validator: (value) => (value == null || value.length < 6) ? 'Password minimal 6 karakter' : null,
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  value: _selectedRole,
-                  decoration: const InputDecoration(
-                    labelText: 'Pilih Peran',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  items: ['pengirim', 'kurir', 'admin'] 
-                      .map((role) => DropdownMenuItem(
-                            value: role,
-                            child: Text(role.toUpperCase()),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedRole = value;
-                    });
-                  },
-                  validator: (value) => (value == null) ? 'Pilih peran pengguna' : null,
-                ),
+                
                 const SizedBox(height: 20),
                 if (_errorMessage.isNotEmpty)
-                  Text(
-                    _errorMessage,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10.0),
+                    child: Text(
+                      _errorMessage,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                const SizedBox(height: 10),
                 ElevatedButton(
-                  onPressed: _register,
+                  onPressed: _isLoading ? null : _register,
                   child: _isLoading 
                       ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
                       : const Text('Daftar'),

@@ -28,16 +28,20 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
   File? _fileLP;
   bool _isLoading = false; // State untuk indikator loading
 
+  // --- PERBAIKAN 1: DEKLARASI CONTROLLER ---
+  // Deklarasikan semua di sini
   late TextEditingController nomorController;
   late TextEditingController perihalController;
   late TextEditingController deskripsiController;
   late TextEditingController penerimaController;
   late TextEditingController pengirimAsalController;
-  late TextEditingController pengirimDivisiController;
-  late TextEditingController pengirimDepartemenController;
-  late TextEditingController penerimaDivisiController;
-  late TextEditingController penerimaDepartemenController;
-  late TextEditingController beratController;
+  // --- DIHAPUS ---
+  // late TextEditingController pengirimDivisiController;
+  // late TextEditingController pengirimDepartemenController;
+  // late TextEditingController penerimaDivisiController;
+  // late TextEditingController penerimaDepartemenController;
+  // late TextEditingController beratController;
+  // --- AKHIR PENGHAPUSAN ---
 
   String? _selectedJenisSurat;
   String? _selectedSifatSurat;
@@ -47,6 +51,8 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
   @override
   void initState() {
     super.initState();
+    
+    // --- PERBAIKAN 2: INISIALISASI ---
     nomorController = TextEditingController(text: widget.surat?.nomor ?? '');
     perihalController =
         TextEditingController(text: widget.surat?.perihal ?? '');
@@ -57,6 +63,17 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
     pengirimAsalController =
         TextEditingController(text: widget.surat?.pengirimAsal ?? '');
 
+    // --- DIHAPUS ---
+    // pengirimDivisiController = 
+    //     TextEditingController(text: widget.surat?.pengirimDivisi ?? '');
+    // pengirimDepartemenController = 
+    //     TextEditingController(text: widget.surat?.pengirimDepartemen ?? '');
+    // penerimaDivisiController = 
+    //     TextEditingController(text: widget.surat?.penerimaDivisi ?? '');
+    // penerimaDepartemenController = 
+    //     TextEditingController(text: widget.surat?.penerimaDepartemen ?? '');
+    // --- AKHIR PENGHAPUSAN ---
+
     if (widget.isEdit && widget.surat != null) {
       _selectedJenisSurat = widget.surat!.jenisSurat;
       _selectedSifatSurat = widget.surat!.sifatSurat;
@@ -65,16 +82,18 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
 
   @override
   void dispose() {
+    // Pastikan dispose semua controller
     nomorController.dispose();
     perihalController.dispose();
     deskripsiController.dispose();
     penerimaController.dispose();
     pengirimAsalController.dispose();
-    pengirimDivisiController.dispose();
-    pengirimDepartemenController.dispose();
-    penerimaDivisiController.dispose();
-    penerimaDepartemenController.dispose();
-    beratController.dispose();
+    // --- DIHAPUS ---
+    // pengirimDivisiController.dispose();
+    // pengirimDepartemenController.dispose();
+    // penerimaDivisiController.dispose();
+    // penerimaDepartemenController.dispose();
+    // --- AKHIR PENGHAPUSAN ---
     super.dispose();
   }
 
@@ -110,9 +129,9 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
 
     if (!_formKey.currentState!.validate() || !isJenisValid || !isSifatValid) {
         if (!isJenisValid || !isSifatValid) {
-            ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Harap lengkapi semua pilihan jenis dan sifat surat!')),
-            );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Harap lengkapi semua pilihan jenis dan sifat surat!')),
+          );
         }
         return;
     }
@@ -130,25 +149,40 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
     });
 
     try {
+      // --- PERBAIKAN 3: SIMPAN DATA BARU ---
+      // Sesuaikan dengan konstruktor Surat Anda yang baru
       final suratData = Surat(
-        id: widget.isEdit ? (widget.surat!.id ?? '') : '',
+        id: widget.isEdit ? (widget.surat!.id) : '', // 'id' required, tidak boleh null
         nomor: nomorController.text,
         perihal: perihalController.text,
         deskripsiSurat: deskripsiController.text,
-        penerimaTujuan: penerimaController.text,
+        
+        // Data Pengirim
         pengirimAsal: pengirimAsalController.text,
-        pengirimId: widget.isEdit ? widget.surat!.pengirimId : 'default_id', // Add this line
+        // --- DIHAPUS ---
+        // pengirimDivisi: pengirimDivisiController.text, 
+        // pengirimDepartemen: pengirimDepartemenController.text,
+        // --- AKHIR PENGHAPUSAN ---
+        pengirimId: widget.isEdit ? widget.surat!.pengirimId : 'default_id', // TODO: Ganti dengan ID user
+        
+        // Data Penerima
+        penerimaTujuan: penerimaController.text,
+        // --- DIHAPUS ---
+        // penerimaDivisi: penerimaDivisiController.text, 
+        // penerimaDepartemen: penerimaDepartemenController.text,
+        // --- AKHIR PENGHAPUSAN ---
+
+        // Detail Surat
         jenisSurat: _selectedJenisSurat!,
         sifatSurat: _selectedSifatSurat!,
+        // berat: double.tryParse(beratController.text) ?? 0.0, // ✅ DIHAPUS
         status: widget.isEdit ? widget.surat!.status : 'Baru',
         tanggal: widget.isEdit
             ? widget.surat!.tanggal
             : DateTime.now().toIso8601String(),
       );
+    -
 
-      // TODO: Implementasi logika upload ke Firebase Storage dan simpan ke database
-      // Contoh: await DatabaseService().addOrUpdateSurat(suratData);
-      // Untuk simulasi, kita pakai delay
       await Future.delayed(const Duration(seconds: 2));
 
       if (mounted) {
@@ -206,23 +240,23 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
           child: TextFormField(
               controller: controller,
               decoration: InputDecoration(
-                  labelText: label,
-                  labelStyle: TextStyle(color: posBlue.withOpacity(0.8)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12), // Border lebih membulat
-                    borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: posOrange, width: 2), // Warna fokus oranye
-                  ),
-                  filled: true,
-                  fillColor: lightGrey, // Warna background input
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                labelText: label,
+                labelStyle: TextStyle(color: posBlue.withOpacity(0.8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12), // Border lebih membulat
+                  borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: posBlue.withOpacity(0.5)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: posOrange, width: 2), // Warna fokus oranye
+                ),
+                filled: true,
+                fillColor: lightGrey, // Warna background input
+                contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
               ),
               maxLines: maxLines,
               keyboardType: keyboardType,
@@ -268,14 +302,16 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
                 controller: pengirimAsalController,
                 label: 'Asal Pengirim',
               ),
-              _buildTextField(
-                controller: pengirimDivisiController,
-                label: 'Divisi Pengirim',
-              ),
-              _buildTextField(
-                controller: pengirimDepartemenController,
-                label: 'Departemen Pengirim',
-              ),
+              // --- DIHAPUS ---
+              // _buildTextField(
+              //   controller: pengirimDivisiController,
+              //   label: 'Divisi Pengirim',
+              // ),
+              // _buildTextField(
+              //   controller: pengirimDepartemenController,
+              //   label: 'Departemen Pengirim',
+              // ),
+              // --- AKHIR PENGHAPUSAN ---
 
               // ================= BAGIAN 2: DATA PENERIMA =================
               _buildSectionTitle('Data Penerima', Icons.people_outline),
@@ -283,14 +319,16 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
                 controller: penerimaController,
                 label: 'Tujuan Penerima',
               ),
-              _buildTextField(
-                controller: penerimaDivisiController,
-                label: 'Divisi Penerima',
-              ),
-              _buildTextField(
-                controller: penerimaDepartemenController,
-                label: 'Departemen Penerima',
-              ),
+              // --- DIHAPUS ---
+              // _buildTextField(
+              //   controller: penerimaDivisiController,
+              //   label: 'Divisi Penerima',
+              // ),
+              // _buildTextField(
+              //   controller: penerimaDepartemenController,
+              //   label: 'Departemen Penerima',
+              // ),
+              // --- AKHIR PENGHAPUSAN ---
 
               // ================= BAGIAN 3: DATA SURAT =================
               _buildSectionTitle('Detail Surat', Icons.article_outlined),
@@ -371,11 +409,13 @@ class _AddEditSuratPageState extends State<AddEditSuratPage> {
                   style: GoogleFonts.poppins(color: Colors.black87), // Style untuk teks yang dipilih
                 ),
               ),
-              _buildTextField(
-                controller: beratController,
-                label: 'Berat Surat (gram)',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
+              // --- DIHAPUS ---
+              // _buildTextField(
+              //   controller: beratController,
+              //   label: 'Berat Surat (gram)',
+              //   keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              // ),
+              // --- AKHIR PENGHAPUSAN ---
 
               // ================= BAGIAN 4: UPLOAD FILE =================
               _buildSectionTitle('Lampiran Dokumen', Icons.attach_file),

@@ -1,5 +1,3 @@
-// lib/pages/dashboard/dashboard_selection.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import package
@@ -39,7 +37,7 @@ class _DashboardSelectionPageState extends State<DashboardSelectionPage> {
     await prefs.setBool('onboardingComplete', true);
     setState(() {
       // Set ulang future agar UI membangun ulang ke alur login
-      _checkOnboardingFuture = Future.value(true); 
+      _checkOnboardingFuture = Future.value(true);
     });
   }
 
@@ -50,7 +48,8 @@ class _DashboardSelectionPageState extends State<DashboardSelectionPage> {
       builder: (context, snapshot) {
         // 1. Saat sedang mengecek SharedPreferences
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+              body: Center(child: CircularProgressIndicator()));
         }
 
         final bool hasCompletedOnboarding = snapshot.data ?? false;
@@ -63,29 +62,41 @@ class _DashboardSelectionPageState extends State<DashboardSelectionPage> {
         // 3. Jika SUDAH onboarding, jalankan alur autentikasi
         return Consumer<AuthService>(
           builder: (context, authService, child) {
-            
             // Saat AuthService sedang mengecek (misal: token)
             if (authService.isCheckingLogin) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()));
             }
 
             // Saat sudah login
             if (authService.currentUser != null) {
               final user = authService.currentUser!;
-              switch (user.role) {
+
+              String userRole = user.role;
+              // -------------------------
+
+              switch (userRole) {
                 case 'admin':
                   return const AdminDashboard();
+
+                // Menambahkan case untuk 'user' yang dikirim backend
+                case 'user':
+                  return HomePage(user: user);
+
                 case 'kurir':
                   return HomePage(user: user);
-                case 'pengirim':
+                case 'pengirim': // Dibiarkan jika ada user lama
                   return HomePage(user: user);
-                case 'penerima':
+                case 'penerima': // Dibiarkan jika ada user lama
                   return HomePage(user: user);
+
                 default:
+                  // Jika role tidak dikenali, logout dan kembali ke login
+                  authService.signOut();
                   return const LoginPage();
               }
             }
-            
+
             // Saat belum login
             return const LoginPage();
           },
