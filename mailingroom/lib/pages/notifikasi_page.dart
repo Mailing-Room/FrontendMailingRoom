@@ -1,9 +1,8 @@
-// lib/pages/notifikasi_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:collection/collection.dart';
 import 'package:intl/intl.dart';
+import 'package:animate_do/animate_do.dart'; // Pastikan package ini ada
 
 // --- Model Data Notifikasi ---
 class Notifikasi {
@@ -45,20 +44,20 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
     Notifikasi(id: '5', judul: 'Verifikasi Berhasil', pesan: 'Surat perjanjian kerjasama telah diverifikasi.', tipe: 'verifikasi', tanggal: DateTime.now().subtract(const Duration(days: 2)), sudahDibaca: true),
   ];
 
-  Map<String, dynamic> _getIconForType(String tipe) {
+  Map<String, dynamic> _getStyleForType(String tipe) {
     switch (tipe) {
       case 'selesai':
-        return {'icon': Icons.check_circle, 'color': Colors.green.shade600};
+        return {'icon': Icons.check_circle_outline_rounded, 'color': Colors.green.shade600, 'bg': Colors.green.shade50};
       case 'surat_masuk':
-        return {'icon': Icons.inbox, 'color': posBlue};
+        return {'icon': Icons.mark_email_unread_outlined, 'color': posBlue, 'bg': Colors.blue.shade50};
       case 'pengiriman':
-        return {'icon': Icons.local_shipping, 'color': posOrange};
+        return {'icon': Icons.local_shipping_outlined, 'color': posOrange, 'bg': Colors.orange.shade50};
       case 'gagal':
-        return {'icon': Icons.error, 'color': Colors.red.shade600};
+        return {'icon': Icons.error_outline_rounded, 'color': Colors.red.shade600, 'bg': Colors.red.shade50};
       case 'verifikasi':
-        return {'icon': Icons.verified_user, 'color': Colors.cyan.shade600};
+        return {'icon': Icons.verified_user_outlined, 'color': Colors.teal.shade600, 'bg': Colors.teal.shade50};
       default:
-        return {'icon': Icons.notifications, 'color': Colors.grey.shade600};
+        return {'icon': Icons.notifications_outlined, 'color': Colors.grey.shade600, 'bg': Colors.grey.shade100};
     }
   }
 
@@ -69,53 +68,63 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       }
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Semua notifikasi ditandai sudah dibaca.'), duration: Duration(seconds: 2)),
+      SnackBar(
+        content: Text('Semua notifikasi ditandai sudah dibaca.', style: GoogleFonts.plusJakartaSans()),
+        backgroundColor: posBlue,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final groupedNotifikasi = groupBy(
-      _daftarNotifikasi,
-      (Notifikasi notif) {
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        final yesterday = DateTime(now.year, now.month, now.day - 1);
-        final notifDate = DateTime(notif.tanggal.year, notif.tanggal.month, notif.tanggal.day);
+    // Kelompokkan notifikasi berdasarkan tanggal
+    final groupedNotifikasi = groupBy(_daftarNotifikasi, (Notifikasi notif) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = DateTime(now.year, now.month, now.day - 1);
+      final notifDate = DateTime(notif.tanggal.year, notif.tanggal.month, notif.tanggal.day);
 
-        if (notifDate == today) {
-          return 'Hari Ini';
-        } else if (notifDate == yesterday) {
-          return 'Kemarin';
-        } else {
-          return 'Lama';
-        }
-      },
-    );
+      if (notifDate == today) return 'Hari Ini';
+      if (notifDate == yesterday) return 'Kemarin';
+      return 'Lama';
+    });
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      // ✅ AppBar ditambahkan dan diberi tema
+      backgroundColor: const Color(0xFFF8F9FA), // Background abu-abu sangat muda
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
-        elevation: 1.0,
-        titleSpacing: 16.0,
+        elevation: 0, // Flat style
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: Colors.grey.shade200, height: 1.0),
+        ),
+        titleSpacing: 20.0,
         title: Text(
           'Notifikasi',
-          style: GoogleFonts.poppins(
-            color: posBlue,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.black87,
             fontWeight: FontWeight.bold,
-            fontSize: 22,
+            fontSize: 24,
           ),
         ),
         actions: [
-          if (_daftarNotifikasi.isNotEmpty)
+          if (_daftarNotifikasi.any((n) => !n.sudahDibaca)) // Hanya tampil jika ada yg belum dibaca
             Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: TextButton(
+              padding: const EdgeInsets.only(right: 12.0),
+              child: TextButton.icon(
                 onPressed: _tandaiSemuaDibaca,
-                child: Text('Tandai semua dibaca', style: GoogleFonts.poppins(color: posBlue)),
+                icon: Icon(Icons.done_all_rounded, size: 18, color: posBlue),
+                label: Text(
+                  'Tandai dibaca', 
+                  style: GoogleFonts.plusJakartaSans(color: posBlue, fontWeight: FontWeight.w600, fontSize: 13)
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: posBlue.withOpacity(0.05),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
               ),
             ),
         ],
@@ -123,28 +132,29 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
       body: _daftarNotifikasi.isEmpty
           ? _buildEmptyState()
           : ListView.builder(
+              padding: const EdgeInsets.only(bottom: 100), // Padding bawah agar tidak ketutup navbar
               itemCount: groupedNotifikasi.keys.length,
               itemBuilder: (context, index) {
                 final groupTitle = groupedNotifikasi.keys.elementAt(index);
                 final notifList = groupedNotifikasi[groupTitle]!;
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 20.0, bottom: 8.0, left: 4.0),
-                        child: Text(
-                          groupTitle,
-                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[600]),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                      child: Text(
+                        groupTitle,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14, 
+                          fontWeight: FontWeight.bold, 
+                          color: Colors.grey[500],
+                          letterSpacing: 0.5
                         ),
                       ),
-                      ...notifList.map((notif) {
-                        return _buildNotificationCard(notif);
-                      }).toList(),
-                    ],
-                  ),
+                    ),
+                    ...notifList.map((notif) => _buildNotificationItem(notif)).toList(),
+                  ],
                 );
               },
             ),
@@ -153,137 +163,173 @@ class _NotifikasiPageState extends State<NotifikasiPage> {
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.asset('assets/images/pos_notification.png', height: 180, errorBuilder: (c, e, s) => Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey[300])),
-          const SizedBox(height: 24),
-          Text('Tidak Ada Notifikasi', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: posBlue)),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40.0),
-            child: Text(
-              'Semua pemberitahuan baru akan muncul di sini.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(color: Colors.grey[600]),
+      child: FadeInUp(
+        duration: const Duration(milliseconds: 500),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.notifications_off_outlined, size: 60, color: Colors.grey[400]),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text('Tidak Ada Notifikasi', 
+              style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40.0),
+              child: Text(
+                'Semua pemberitahuan penting mengenai surat Anda akan muncul di sini.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(color: Colors.grey[500], height: 1.5),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildNotificationCard(Notifikasi notifikasi) {
-    final style = _getIconForType(notifikasi.tipe);
+  Widget _buildNotificationItem(Notifikasi notifikasi) {
+    final style = _getStyleForType(notifikasi.tipe);
     final iconData = style['icon'] as IconData;
     final iconColor = style['color'] as Color;
-    final itemIndex = _daftarNotifikasi.indexOf(notifikasi);
+    final bgColor = style['bg'] as Color;
 
     return Dismissible(
       key: Key(notifikasi.id),
       direction: DismissDirection.endToStart,
+      background: Container(
+        color: Colors.red.shade500,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
+      ),
       onDismissed: (direction) {
         setState(() {
-          _daftarNotifikasi.removeAt(itemIndex);
+          _daftarNotifikasi.removeWhere((item) => item.id == notifikasi.id);
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${notifikasi.judul} dihapus'), duration: const Duration(seconds: 2)),
+          SnackBar(content: Text('Notifikasi dihapus', style: GoogleFonts.plusJakartaSans())),
         );
       },
-      background: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.centerRight,
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
-      ),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        elevation: notifikasi.sudahDibaca ? 0.5 : 3.0,
-        shadowColor: Colors.black.withOpacity(0.1),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: notifikasi.sudahDibaca
-              ? BorderSide(color: Colors.grey[200]!)
-              : BorderSide(color: posBlue.withOpacity(0.5), width: 1.5), // ✅ Border biru untuk notif baru
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            setState(() {
-              notifikasi.sudahDibaca = true;
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    // ✅ Latar belakang ikon lebih soft
-                    color: notifikasi.sudahDibaca ? Colors.grey.shade200 : iconColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(iconData, color: notifikasi.sudahDibaca ? Colors.grey.shade500 : iconColor),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            notifikasi.sudahDibaca = true;
+          });
+        },
+        // Highlight background jika belum dibaca
+        child: Container(
+          color: notifikasi.sudahDibaca ? Colors.transparent : posBlue.withOpacity(0.03),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Ikon Notifikasi
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: notifikasi.sudahDibaca ? Colors.grey.shade100 : bgColor,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notifikasi.judul,
-                              style: GoogleFonts.poppins(
-                                fontWeight: notifikasi.sudahDibaca ? FontWeight.w500 : FontWeight.bold,
-                                fontSize: 15,
-                                color: notifikasi.sudahDibaca ? Colors.grey[700] : posBlue, // ✅ Judul biru untuk notif baru
-                              ),
+                child: Icon(
+                  iconData, 
+                  color: notifikasi.sudahDibaca ? Colors.grey.shade400 : iconColor,
+                  size: 24
+                ),
+              ),
+              const SizedBox(width: 16),
+              
+              // Konten Teks
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notifikasi.judul,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: notifikasi.sudahDibaca ? FontWeight.w600 : FontWeight.w800,
+                              fontSize: 15,
+                              color: notifikasi.sudahDibaca ? Colors.black87 : Colors.black,
                             ),
                           ),
-                          // ✅ Titik oranye sebagai indikator notif baru
-                          if (!notifikasi.sudahDibaca)
-                            Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: posOrange,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        notifikasi.pesan,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: notifikasi.sudahDibaca ? Colors.grey[600] : Colors.black54,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        // Waktu
+                        Text(
+                          _formatTime(notifikasi.tanggal),
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12, 
+                            color: notifikasi.sudahDibaca ? Colors.grey[400] : posBlue,
+                            fontWeight: notifikasi.sudahDibaca ? FontWeight.normal : FontWeight.w600
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      notifikasi.pesan,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: notifikasi.sudahDibaca ? Colors.grey[600] : Colors.black87,
+                        height: 1.4
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (!notifikasi.sudahDibaca) ...[
                       const SizedBox(height: 8),
-                      Text(
-                        DateFormat('d MMM yyyy, HH:mm').format(notifikasi.tanggal),
-                        style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey[500]),
-                      ),
-                    ],
-                  ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: posOrange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          "Baru",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: posOrange,
+                          ),
+                        ),
+                      )
+                    ]
+                  ],
                 ),
-              ],
-            ),
+              ),
+              
+              // Indikator Belum Dibaca (Titik) - Opsional, sudah diganti background
+              // if (!notifikasi.sudahDibaca)
+              //   Padding(
+              //     padding: const EdgeInsets.only(left: 8.0, top: 4),
+              //     child: CircleAvatar(radius: 4, backgroundColor: posOrange),
+              //   ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  String _formatTime(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m yang lalu';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}j yang lalu';
+    } else {
+      return DateFormat('HH:mm').format(date);
+    }
   }
 }

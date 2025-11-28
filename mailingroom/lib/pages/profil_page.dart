@@ -1,187 +1,341 @@
-// lib/pages/profil_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:animate_do/animate_do.dart'; // Pastikan package ini ada, atau hapus widget FadeIn jika tidak ada
 import '../auth/auth_service.dart';
-import '../models/user.dart'; 
-// TODO: Buat halaman 'edit_profil_page.dart'
-// import 'edit_profil_page.dart'; 
+import '../models/user.dart';
 
 class ProfilPage extends StatelessWidget {
-  // ✅ PERBAIKAN: Terima MyUser dari HomePage
   final MyUser user;
   const ProfilPage({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
-    final Color posBlue = Theme.of(context).colorScheme.primary;
-    final Color posOrange = Theme.of(context).colorScheme.secondary;
-
+    // Warna Tema
+    const Color posBlue = Color(0xFF00529C);
+    const Color posOrange = Color(0xFFF37021);
+    
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: Column(
+      backgroundColor: const Color(0xFFF8F9FA), // Abu-abu sangat muda
+      // Stack memungkinkan kita menumpuk Header di bawah, dan Konten di atasnya
+      body: Stack(
         children: [
-          // --- HEADER PROFIL ---
+          // 1. HEADER BACKGROUND (Gradient)
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 60, bottom: 24, left: 20, right: 20),
-            decoration: BoxDecoration(
-              color: posBlue,
-              borderRadius: const BorderRadius.only(
+            height: 220, // Tinggi header
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [posBlue, Color(0xFF0073E6)],
+              ),
+              borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
               ),
             ),
+          ),
+
+          // 2. KONTEN UTAMA (Scrollable)
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 45,
-                  backgroundColor: posOrange,
-                  child: Text(
-                    // ✅ Tampilkan inisial nama dari backend
-                    user.nama.isNotEmpty ? user.nama[0].toUpperCase() : '?',
-                    style: GoogleFonts.poppins(fontSize: 40, color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 60), // Spasi untuk status bar
+                
+                // --- JUDUL HALAMAN (Di atas header) ---
                 Text(
-                  user.nama, // ✅ Tampilkan nama dari backend
-                  style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-                Text(
-                  'User ID: ${user.uid.substring(0, 8)}', // ✅ Tampilkan UID
-                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-          
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // --- KARTU INFORMASI AKUN ---
-                  _buildSectionCard(
-                    context: context,
-                    title: 'Informasi Akun',
-                    icon: Icons.person_outline,
-                    children: [
-                      _buildInfoRow('Nama Lengkap', user.nama),
-                      _buildInfoRow('Email', user.email),
-                      _buildInfoRow('Nomor Handphone', user.phone ?? '-'),
-                      _buildInfoRow('Peran', user.role.toUpperCase()),
-                    ],
+                  'Profil Saya',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // --- KARTU PENGATURAN ---
-                  _buildSectionCard(
-                    context: context,
-                    title: 'Pengaturan & Keamanan',
-                    icon: Icons.security_outlined,
-                    children: [
-                      // ✅ Tombol Ubah Profil (Anda perlu membuat halamannya)
-                      _buildNavRow(context, 'Ubah Profil', Icons.edit_outlined, () {
-                        // Nanti:
-                        // Navigator.push(context, MaterialPageRoute(builder: (context) => EditProfilPage(user: user)));
-                      }),
-                      _buildNavRow(context, 'Ubah Password', Icons.lock_outline, () {}),
-                    ],
-                  ),
+                ),
+                
+                const SizedBox(height: 30),
 
-                  const SizedBox(height: 24),
-                  
-                  // --- TOMBOL LOGOUT ---
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Provider.of<AuthService>(context, listen: false).signOut();
-                    },
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Keluar dari Akun'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[50],
-                      foregroundColor: Colors.red[700],
-                      elevation: 0,
-                      minimumSize: const Size(double.infinity, 50),
+                // --- KARTU UTAMA (FOTO & INFO DASAR) ---
+                FadeInUp(
+                  duration: const Duration(milliseconds: 600),
+                  child: Stack(
+                    alignment: Alignment.topCenter,
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Kartu Putih di Belakang
+                      Container(
+                        margin: const EdgeInsets.only(top: 50), // Beri ruang untuk foto di atas
+                        padding: const EdgeInsets.fromLTRB(20, 60, 20, 20), // Padding atas besar untuk foto
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            // Nama
+                            Text(
+                              user.nama,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            // ID & Role
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: posBlue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${user.role.toUpperCase()} • ID: ${user.uid.substring(0, 8)}',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: posBlue,
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            const Divider(height: 1),
+                            const SizedBox(height: 24),
+
+                            // Info Detail (Grid/Column)
+                            _buildDetailRow(Icons.email_outlined, 'Email', user.email),
+                            const SizedBox(height: 16),
+                            _buildDetailRow(Icons.phone_android_outlined, 'No. HP', user.phone ?? '-'),
+                          ],
+                        ),
+                      ),
+                      
+                      // Foto Profil (Melayang di atas kartu)
+                      Positioned(
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white, // Border putih tebal
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircleAvatar(
+                            radius: 45,
+                            backgroundColor: posOrange,
+                            child: Text(
+                              user.nama.isNotEmpty ? user.nama[0].toUpperCase() : '?',
+                              style: GoogleFonts.poppins(
+                                fontSize: 36,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // --- MENU PENGATURAN ---
+                FadeInUp(
+                  duration: const Duration(milliseconds: 600),
+                  delay: const Duration(milliseconds: 200),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0, bottom: 12.0),
+                        child: Text(
+                          "Pengaturan",
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildSettingsTile(
+                              context, 
+                              title: 'Edit Profil', 
+                              icon: Icons.edit_outlined, 
+                              onTap: () {
+                                // Navigator.push(...)
+                              }
+                            ),
+                            const Divider(height: 1, indent: 60),
+                            _buildSettingsTile(
+                              context, 
+                              title: 'Ubah Password', 
+                              icon: Icons.lock_outline_rounded, 
+                              onTap: () {}
+                            ),
+                            const Divider(height: 1, indent: 60),
+                            _buildSettingsTile(
+                              context, 
+                              title: 'Bantuan & Dukungan', 
+                              icon: Icons.help_outline_rounded, 
+                              onTap: () {}
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // --- TOMBOL LOGOUT ---
+                FadeInUp(
+                  duration: const Duration(milliseconds: 600),
+                  delay: const Duration(milliseconds: 400),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _showLogoutDialog(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red.shade50,
+                        foregroundColor: Colors.red,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        "Keluar Akun",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper untuk membuat kartu
-  Widget _buildSectionCard({required BuildContext context, required String title, required IconData icon, required List<Widget> children}) {
-    return Card(
-      elevation: 1,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                  ),
                 ),
+                const SizedBox(height: 40),
               ],
             ),
           ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          ...children,
         ],
       ),
     );
   }
 
-  // Helper untuk baris info di profil
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(label, style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600])),
+  // Widget Helper: Baris Info Detail
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
           ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Helper untuk tombol navigasi
-  Widget _buildNavRow(BuildContext context, String title, IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.grey[500], size: 22),
-            const SizedBox(width: 16),
-            Expanded(child: Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w500))),
-            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
-          ],
+          child: Icon(icon, color: Colors.grey.shade600, size: 22),
         ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  color: Colors.black87,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget Helper: Menu Pengaturan (ListTile)
+  Widget _buildSettingsTile(BuildContext context, {required String title, required IconData icon, required VoidCallback onTap}) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+      ),
+      title: Text(
+        title,
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+    );
+  }
+
+  // Dialog Logout Konfirmasi
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Keluar?", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+        content: Text("Apakah Anda yakin ingin keluar dari aplikasi?", style: GoogleFonts.plusJakartaSans()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("Batal", style: GoogleFonts.plusJakartaSans(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx); // Tutup dialog
+              Provider.of<AuthService>(context, listen: false).signOut();
+            },
+            child: Text("Ya, Keluar", style: GoogleFonts.plusJakartaSans(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
