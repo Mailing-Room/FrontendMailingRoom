@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart'; // Impor ini diperlukan
 import 'package:mailingroom/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/office.dart'; // ✅ Pastikan import model Office ini benar
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -14,17 +14,56 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // --- State untuk Office ---
+  List<Office> _officeList = [];
+  String? _selectedOfficeId;
+  bool _isLoadingOffices = true;
+  // --------------------------
 
   bool _isLoading = false;
   String _errorMessage = '';
 
-  Future<void> _register() async {
-    // 1. Validasi form
-    if (!_formKey.currentState!.validate()) return;
+  @override
+  void initState() {
+    super.initState();
+    // Panggil fungsi untuk mengambil data office saat halaman dibuka
+    _fetchOffices();
+  }
+
+  // Fungsi mengambil data office dari backend via AuthService
+  Future<void> _fetchOffices() async {
+    setState(() {
+      _isLoadingOffices = true;
+    });
     
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final offices = await authService.getOffices();
+      
+      if (mounted) {
+        setState(() {
+          _officeList = offices;
+          _isLoadingOffices = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _officeList = []; // Pastikan list kosong jika error
+          _isLoadingOffices = false;
+          // Opsional: Tampilkan snackbar atau pesan error jika gagal load office
+          print("Error loading offices: $e");
+        });
+      }
+    }
+  }
+
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) return;
+
     // Tutup keyboard
     FocusScope.of(context).unfocus();
     
@@ -33,13 +72,12 @@ class _RegisterPageState extends State<RegisterPage> {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       
-      // 2. Panggil authService dengan parameter yang benar
-      // (email, password, name, phone)
+      // Panggil register dengan officeId yang dipilih
       await authService.register(
         _emailController.text,
         _passwordController.text,
         _nameController.text,
-        _phoneController.text,
+        _selectedOfficeId, // ✅ Kirim ID office yang dipilih
       );
 
       if (mounted) {
@@ -52,7 +90,6 @@ class _RegisterPageState extends State<RegisterPage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          // Format pesan error
           String message = e.toString();
           if (message.startsWith('Exception: ')) {
             message = message.substring('Exception: '.length);
@@ -70,7 +107,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -101,13 +137,64 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Form Telepon
-                TextFormField(
-                  controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Nomor Telepon', prefixIcon: Icon(Icons.phone_outlined)),
-                  validator: (value) => (value == null || value.isEmpty) ? 'Telepon tidak boleh kosong' : null,
-                  keyboardType: TextInputType.phone,
-                ),
+                // --- DROPDOWN OFFICE BARU (DENGAN PENANGANAN ERROR) ---
+                _isLoadingOffices 
+                  ? const Center(child: Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: SizedBox(
+                        width: 20, 
+                        height: 20, 
+                        child: CircularProgressIndicator(strokeWidth: 2)
+                      ),
+                    ))
+                  : _officeList.isEmpty
+                      // Jika data kosong/gagal load, tampilkan tombol refresh
+                      ? InkWell(
+                          onTap: _fetchOffices,
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Pilih Kantor / Office',
+                              prefixIcon: Icon(Icons.location_city),
+                              border: OutlineInputBorder(),
+                              errorText: 'Gagal memuat data. Ketuk untuk ulangi.',
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: const [
+                                Text("Data tidak ditemukan"),
+                                Icon(Icons.refresh, color: Colors.orange),
+                              ],
+                            ),
+                          ),
+                        )
+                      // Jika data ada, tampilkan dropdown normal
+                      : DropdownButtonFormField<String>(
+                          value: _selectedOfficeId,
+                          isExpanded: true, // Agar teks panjang tidak overflow
+                          decoration: const InputDecoration(
+                            labelText: 'Pilih Kantor / Office',
+                            prefixIcon: Icon(Icons.location_city),
+                            border: OutlineInputBorder(),
+                          ),
+                          hint: const Text('Pilih lokasi kantor Anda'),
+                          items: _officeList.map((Office office) {
+                            return DropdownMenuItem<String>(
+                              value: office.id, // Value yang disimpan adalah ID
+                              child: Text(
+                                "${office.namaOffice} (${office.kota})", // Tampilan Nama + Kota
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedOfficeId = newValue;
+                            });
+                          },
+                          validator: (value) => (value == null) ? 'Harap pilih kantor' : null,
+                        ),
+                // -----------------------------
+
                 const SizedBox(height: 16),
                 
                 // Form Email
@@ -116,7 +203,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
-                    // Validasi @gmail.com sesuai backend
                     if (!value.endsWith('@gmail.com')) return 'Email harus menggunakan @gmail.com';
                     return null;
                   },

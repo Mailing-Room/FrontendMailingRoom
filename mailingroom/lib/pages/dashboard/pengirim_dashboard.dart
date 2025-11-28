@@ -1,44 +1,13 @@
-// lib/pages/dashboard/pengirim_dashboard.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mailingroom/models/user.dart';
-import 'package:mailingroom/pages/tracking_page.dart'; // Import halaman pelacakan
+import 'package:mailingroom/pages/tracking_page.dart';
 import 'package:mailingroom/pages/add_edit_surat_pages.dart';
-import 'package:provider/provider.dart'; // ✅ Import Provider
-import 'package:intl/intl.dart'; // ✅ Import intl untuk format tanggal
-
-// ✅ Import provider dan model Anda
-import 'package:mailingroom/providers/surat_provider.dart'; 
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:mailingroom/providers/surat_provider.dart';
 import 'package:mailingroom/models/surat.dart';
 
-// --- MODEL UNTUK AKSI CEPAT ---
-class AksiCepatItem {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  AksiCepatItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-}
-
-// --- MODEL UNTUK STATISTIK ---
-class StatistikItem {
-  final String title;
-  final String count;
-  final Color color;
-
-  StatistikItem({required this.title, required this.count, required this.color});
-}
-
-// --- WIDGET UTAMA ---
 class PengirimDashboard extends StatelessWidget {
   final MyUser user;
   final Function(int, {int subTabIndex}) onNavigateToTab;
@@ -49,258 +18,264 @@ class PengirimDashboard extends StatelessWidget {
     required this.onNavigateToTab,
   });
 
-  // Helper untuk warna status
-  Color _getStatusColor(BuildContext context, String status) {
-    final s = status.toLowerCase();
-    if (s.contains('terkirim') || s.contains('diterima') || s.contains('selesai')) return Colors.green.shade600;
-    if (s.contains('menunggu') || s.contains('dalam perjalanan') || s.contains('pending')) return Theme.of(context).colorScheme.secondary;
-    if (s.contains('gagal')) return Colors.red.shade600;
-    return Theme.of(context).colorScheme.primary;
-  }
-  
-  Color _getSifatColor(BuildContext context, String sifat) {
-    final s = sifat.toLowerCase();
-    if (s.contains('penting')) return Colors.red.shade600;
-    if (s.contains('segera')) return Theme.of(context).colorScheme.secondary;
-    return Colors.blue.shade600;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final Color posOrange = Theme.of(context).colorScheme.secondary;
-    final Color posBlue = Theme.of(context).colorScheme.primary;
-    
+    // Gunakan listen: false karena kita akan pakai StreamBuilder
     final suratProvider = Provider.of<SuratProvider>(context, listen: false);
 
-    final List<AksiCepatItem> aksiCepatList = [
-      AksiCepatItem(
-        title: 'Kirim Surat',
-        subtitle: 'Kirim surat baru',
-        icon: Icons.add_outlined,
-        color: posOrange,
-        onTap: () {
-           Navigator.push(
-             context,
-             MaterialPageRoute(builder: (context) => const AddEditSuratPage())
-           );
-        },
-      ),
-      AksiCepatItem(
-        title: 'Tracking Surat',
-        subtitle: 'Lacak posisi surat',
-        icon: Icons.track_changes_outlined,
-        color: Colors.green.shade600,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const TrackingPage()),
-          );
-        },
-      ),
-      AksiCepatItem(
-        title: 'Surat Masuk',
-        subtitle: 'Lihat kotak masuk',
-        icon: Icons.inbox_outlined,
-        color: posBlue,
-        onTap: () {
-          onNavigateToTab(1, subTabIndex: 0); // Pindah ke tab Surat Masuk
-        },
-      ),
-      AksiCepatItem(
-        title: 'Surat Keluar',
-        subtitle: 'Lihat surat terkirim',
-        icon: Icons.outbox_outlined,
-        color: Colors.red.shade600,
-        onTap: () {
-          onNavigateToTab(1, subTabIndex: 1); // Pindah ke tab Surat Keluar
-        },
-      ),
-    ];
-
     return SingleChildScrollView(
-      // Padding diatur agar konsisten dengan AppBar
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+      padding: const EdgeInsets.only(bottom: 100),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Grid Aksi Cepat (Responsive) ---
-          _buildSectionTitle('Aksi Cepat'),
-          // Gunakan LayoutBuilder untuk membuat grid responsif
-          LayoutBuilder(
-            builder: (context, constraints) {
-              // Tentukan jumlah kolom berdasarkan lebar yang tersedia
-              int crossAxisCount = (constraints.maxWidth < 600) ? 2 : 4;
-              // Tentukan rasio aspek agar kartu tidak terlalu tinggi
-              double childAspectRatio = (constraints.maxWidth < 600) ? 2.5 : 3.0;
-              
-              return GridView.count(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: childAspectRatio, 
-                children: aksiCepatList.map((item) {
-                  return _AksiCepatCard(item: item);
-                }).toList(),
-              );
-            }
-          ),
-          const SizedBox(height: 24),
+          // 1. HEADER / BANNER
+          _buildWelcomeBanner(context),
 
-          // --- Statistik & Surat Terbaru (dari Stream) ---
-          StreamBuilder<List<Surat>>(
-            stream: suratProvider.allSuratStream, 
-            builder: (context, snapshot) {
-              
-              List<Surat> suratList = [];
-              if (snapshot.hasData) {
-                suratList = snapshot.data!;
-              }
+          // 2. KONTEN UTAMA
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    
+                    // --- SECTION AKSI CEPAT ---
+                    _buildSectionHeader("Aksi Cepat"),
+                    const SizedBox(height: 16),
+                    _buildQuickActionsGrid(context),
 
-              // Hitung statistik
-              final int suratMasukCount = suratList.where((s) => s.jenisSurat.toLowerCase().contains('internal')).length; // Sesuaikan
-              final int suratKeluarCount = suratList.where((s) => s.jenisSurat.toLowerCase().contains('eksternal')).length; // Sesuaikan
-              final int pendingCount = suratList.where((s) => (s.status.toLowerCase().contains('pending') || s.status.toLowerCase().contains('menunggu'))).length;
-              final int selesaiCount = suratList.where((s) => (s.status.toLowerCase().contains('selesai') || s.status.toLowerCase().contains('terkirim') || s.status.toLowerCase().contains('diterima'))).length;
+                    const SizedBox(height: 32),
 
-              final List<StatistikItem> statistikList = [
-                StatistikItem(title: 'Surat Masuk', count: suratMasukCount.toString(), color: posBlue),
-                StatistikItem(title: 'Surat Keluar', count: suratKeluarCount.toString(), color: posOrange),
-                StatistikItem(title: 'Pending', count: pendingCount.toString(), color: Colors.amber.shade700),
-                StatistikItem(title: 'Selesai', count: selesaiCount.toString(), color: Colors.green.shade600),
-              ];
+                    // --- STREAM BUILDER UTAMA ---
+                    // Kita bungkus Statistik & List Surat dalam satu StreamBuilder
+                    // agar data diambil sekali dan konsisten.
+                    StreamBuilder<List<Surat>>(
+                      stream: suratProvider.allSuratStream,
+                      builder: (context, snapshot) {
+                        // Data default jika loading/kosong
+                        List<Surat> suratList = [];
+                        if (snapshot.hasData) {
+                          suratList = snapshot.data!;
+                        }
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // --- Grid Statistik (Responsive) ---
-                  _buildSectionTitle('Statistik'),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      int crossAxisCount = (constraints.maxWidth < 600) ? 2 : 4;
-                      double childAspectRatio = (constraints.maxWidth < 600) ? 2.2 : 2.5;
+                        // --- HITUNG STATISTIK DI SINI (Manual) ---
+                        final int masuk = suratList.where((s) => s.jenisSurat.toLowerCase().contains('masuk')).length;
+                        final int keluar = suratList.where((s) => s.jenisSurat.toLowerCase().contains('keluar')).length;
+                        final int pending = suratList.where((s) => 
+                            s.status.toLowerCase().contains('pending') || 
+                            s.status.toLowerCase().contains('menunggu') ||
+                            s.status.toLowerCase().contains('proses')
+                        ).length;
+                        final int selesai = suratList.where((s) => 
+                            s.status.toLowerCase().contains('selesai') || 
+                            s.status.toLowerCase().contains('terkirim') || 
+                            s.status.toLowerCase().contains('diterima')
+                        ).length;
 
-                      return GridView.count(
-                        crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: childAspectRatio,
-                        children: statistikList.map((item) {
-                          return _StatistikCard(item: item);
-                        }).toList(),
-                      );
-                    }
-                  ),
-                  const SizedBox(height: 24),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // --- SECTION STATISTIK ---
+                            _buildSectionHeader("Ringkasan Surat"),
+                            const SizedBox(height: 16),
+                            // Kirim hasil hitungan ke widget grid
+                            _buildStatisticsGrid(context, masuk, keluar, pending, selesai),
 
-                  // --- Daftar Surat Terbaru ---
-                  _buildSectionTitle('Surat Terbaru'),
-                  
-                  if (snapshot.connectionState == ConnectionState.waiting)
-                    const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
-                  else if (snapshot.hasError)
-                    const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Gagal memuat data surat.')))
-                  else if (suratList.isEmpty)
-                    const Center(child: Padding(padding: EdgeInsets.all(32.0), child: Text('Tidak ada surat terbaru.')))
-                  else
-                    ListView.builder(
-                      itemCount: suratList.length > 5 ? 5 : suratList.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        final surat = suratList[index]; 
-                        return _SuratCard(
-                          surat: surat,
-                          statusColor: _getStatusColor(context, surat.status),
-                          sifatColor: _getSifatColor(context, surat.sifatSurat),
+                            const SizedBox(height: 32),
+
+                            // --- SECTION SURAT TERBARU ---
+                            _buildSectionHeader("Surat Terbaru"),
+                            const SizedBox(height: 16),
+                            
+                            // Tampilkan loading jika data belum ada
+                            if (snapshot.connectionState == ConnectionState.waiting)
+                               const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+                            else
+                               _buildRecentLettersList(context, suratList),
+                          ],
                         );
                       },
                     ),
-                ],
-              );
-            },
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4.0, bottom: 12.0),
-      child: Text(
-        title,
-        style: GoogleFonts.poppins(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
+  // --- WIDGET: HEADER BANNER ---
+  Widget _buildWelcomeBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 40), 
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF00529C), // Pos Blue
+            const Color(0xFF0073E6), // Lighter Blue
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00529C).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1000),
+        child: Center( 
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundColor: const Color(0xFFF37021), // Orange
+                  child: Text(
+                    user.nama.isNotEmpty ? user.nama[0].toUpperCase() : 'U',
+                    style: GoogleFonts.poppins(
+                      fontSize: 26, 
+                      fontWeight: FontWeight.bold, 
+                      color: Colors.white
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Halo, ${user.nama} 👋",
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    "Selamat datang di Mailing Room",
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
 
-// --- WIDGET KARTU AKSI CEPAT ---
-class _AksiCepatCard extends StatelessWidget {
-  final AksiCepatItem item;
-  const _AksiCepatCard({required this.item});
+  // --- WIDGET: GRID AKSI CEPAT ---
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double itemWidth = (constraints.maxWidth - 20) / 2; 
+        if (constraints.maxWidth > 600) {
+          itemWidth = (constraints.maxWidth - 45) / 4;
+        }
 
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+        return Wrap(
+          spacing: 15,
+          runSpacing: 15,
+          children: [
+            _buildActionCard(
+              context, "Kirim Surat", "Buat baru", Icons.send_rounded, 
+              const Color(0xFFF37021), 
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddEditSuratPage())),
+              width: itemWidth,
+            ),
+            _buildActionCard(
+              context, "Lacak Surat", "Cek posisi", Icons.location_searching_rounded, 
+              const Color(0xFF28A745), 
+              () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackingPage())),
+              width: itemWidth,
+            ),
+            _buildActionCard(
+              context, "Surat Masuk", "Kotak masuk", Icons.mark_email_unread_rounded, 
+              const Color(0xFF00529C), 
+              () => onNavigateToTab(1, subTabIndex: 0),
+              width: itemWidth,
+            ),
+            _buildActionCard(
+              context, "Surat Keluar", "Riwayat", Icons.outbox_rounded, 
+              const Color(0xFFDC3545), 
+              () => onNavigateToTab(1, subTabIndex: 1),
+              width: itemWidth,
             ),
           ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
+        );
+      }
+    );
+  }
+
+  Widget _buildActionCard(BuildContext context, String title, String subtitle, IconData icon, Color color, VoidCallback onTap, {required double width}) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 0, 
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: width,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.08),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: item.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(item.icon, color: item.color, size: 24),
+                child: Icon(icon, color: color, size: 28),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      item.title,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                      overflow: TextOverflow.ellipsis, // Hindari overflow teks
-                    ),
-                    Text(
-                      item.subtitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: Colors.grey[500],
                 ),
               ),
             ],
@@ -309,206 +284,207 @@ class _AksiCepatCard extends StatelessWidget {
       ),
     );
   }
-}
 
-// --- WIDGET KARTU STATISTIK ---
-class _StatistikCard extends StatelessWidget {
-  final StatistikItem item;
-  const _StatistikCard({required this.item});
+  // --- WIDGET: GRID STATISTIK (Menerima Data Langsung) ---
+  Widget _buildStatisticsGrid(BuildContext context, int masuk, int keluar, int pending, int selesai) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double itemWidth = (constraints.maxWidth - 20) / 2; 
+        if (constraints.maxWidth > 600) {
+          itemWidth = (constraints.maxWidth - 45) / 4;
+        }
 
-  @override
-  Widget build(BuildContext context) {
+        return Wrap(
+          spacing: 15,
+          runSpacing: 15,
+          children: [
+            _buildStatCard("Masuk", masuk.toString(), Icons.arrow_downward_rounded, Colors.blue, width: itemWidth),
+            _buildStatCard("Keluar", keluar.toString(), Icons.arrow_upward_rounded, Colors.orange, width: itemWidth),
+            _buildStatCard("Pending", pending.toString(), Icons.hourglass_top_rounded, Colors.amber[700]!, width: itemWidth),
+            _buildStatCard("Selesai", selesai.toString(), Icons.check_circle_outline_rounded, Colors.green, width: itemWidth),
+          ],
+        );
+      }
+    );
+  }
+
+  Widget _buildStatCard(String title, String count, IconData icon, Color color, {required double width}) {
     return Container(
+      width: width,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Container(
-            height: 6,
-            decoration: BoxDecoration(
-              color: item.color,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.count,
-                  style: GoogleFonts.poppins(
+                  count,
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
                 ),
                 Text(
-                  item.title,
-                  style: GoogleFonts.poppins(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
-                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[500],
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
+            ),
+          ),
+          Icon(icon, size: 40, color: color.withOpacity(0.2)),
+        ],
+      ),
+    );
+  }
+
+  // --- WIDGET: LIST SURAT TERBARU (Menerima Data Langsung) ---
+  Widget _buildRecentLettersList(BuildContext context, List<Surat> suratList) {
+    if (suratList.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // Ambil 5 surat terbaru
+    final list = suratList.take(5).toList(); 
+
+    return ListView.separated(
+      shrinkWrap: true, 
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: list.length,
+      separatorBuilder: (c, i) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        return _buildSuratListItem(list[index]);
+      },
+    );
+  }
+
+  Widget _buildSuratListItem(Surat surat) {
+    Color statusColor = Colors.blue;
+    String status = surat.status.toLowerCase();
+    if (status.contains('selesai') || status.contains('terkirim') || status.contains('diterima')) statusColor = Colors.green;
+    else if (status.contains('pending') || status.contains('menunggu')) statusColor = Colors.orange;
+    else if (status.contains('gagal')) statusColor = Colors.red;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.description_outlined,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  surat.perihal,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "No: ${surat.nomor}",
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              surat.status,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: statusColor,
+              ),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-// --- WIDGET KARTU SURAT ---
-class _SuratCard extends StatelessWidget {
-  final Surat surat;
-  final Color statusColor;
-  final Color sifatColor;
-
-  const _SuratCard({
-    required this.surat,
-    required this.statusColor,
-    required this.sifatColor,
-  });
-
-  String _formatTanggal(String tanggal) {
-    try {
-      final dt = DateTime.parse(tanggal);
-      return DateFormat('d MMM yyyy', 'id_ID').format(dt);
-    } catch (e) {
-      return tanggal;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
-      margin: const EdgeInsets.only(bottom: 12.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _buildTagChip(surat.sifatSurat, sifatColor),
-                const SizedBox(width: 8),
-                _buildTagChip(surat.jenisSurat, Theme.of(context).colorScheme.primary, isSolid: false),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              surat.perihal,
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'No. ${surat.nomor}',
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: Colors.grey[700],
-              ),
-            ),
-            const Divider(height: 24),
-            _buildInfoRow('Pengirim:', surat.pengirimAsal),
-            const SizedBox(height: 8),
-            _buildInfoRow('Penerima:', surat.penerimaTujuan ?? '-'),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStatusChip(surat.status, statusColor),
-                Text(
-                  _formatTanggal(surat.tanggal),
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTagChip(String label, Color color, {bool isSolid = true}) {
+  Widget _buildEmptyState() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(30),
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: isSolid ? color.withOpacity(0.15) : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-        border: isSolid ? null : Border.all(color: color.withOpacity(0.7), width: 1.5),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          color: isSolid ? color : color.withOpacity(0.9),
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      child: Text(
-        label,
-        style: GoogleFonts.poppins(
-          color: color,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-        ),
+      child: Column(
+        children: [
+          Icon(Icons.inbox_rounded, size: 48, color: Colors.grey[300]),
+          const SizedBox(height: 12),
+          Text(
+            "Belum ada surat",
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
-        ),
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
     );
   }
 }

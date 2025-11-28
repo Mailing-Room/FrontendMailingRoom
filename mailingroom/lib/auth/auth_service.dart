@@ -3,25 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../models/user.dart'; // Pastikan Anda memiliki file models/user.dart
-
-// Asumsi model MyUser sederhana
-// class MyUser {
-//   final String userId;
-//   final String name;
-//   final String email;
-//   final String roleId;
-//   MyUser({required this.userId, required this.name, required this.email, required this.roleId});
-//
-//   factory MyUser.fromJson(Map<String, dynamic> json) {
-//     return MyUser(
-//       userId: json['user_id'] ?? '',
-//       name: json['name'] ?? '',
-//       email: json['email'] ?? '',
-//       roleId: json['role_id'] ?? '',
-//     );
-//   }
-// }
+import '../models/user.dart';
+import '../models/office.dart'; // ✅ PENTING: Import model Office
 
 class AuthService with ChangeNotifier {
   MyUser? _currentUser;
@@ -30,6 +13,7 @@ class AuthService with ChangeNotifier {
   bool _isCheckingLogin = true;
   bool get isCheckingLogin => _isCheckingLogin;
 
+  // Base URL ke API Heroku Anda
   final String _baseUrl = 'https://mailingroom-db0c7a47e986.herokuapp.com/api'; 
   final _storage = const FlutterSecureStorage();
   String? _token;
@@ -47,9 +31,7 @@ class AuthService with ChangeNotifier {
       return;
     }
     
-    // TODO: Panggil endpoint /verify-token di sini untuk validasi
-    // dan mengambil data user berdasarkan token yang tersimpan.
-    // Jika berhasil, set _currentUser.
+    // TODO: Panggil endpoint /verify-token di sini jika ada
     
     _isCheckingLogin = false;
     notifyListeners();
@@ -67,7 +49,6 @@ class AuthService with ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         
-        // Pastikan 'user' ada di response
         if (data['user'] == null) {
           throw Exception('Data user tidak ditemukan di response login.');
         }
@@ -83,7 +64,6 @@ class AuthService with ChangeNotifier {
         final errorData = jsonDecode(response.body);
         String errorMessage = errorData['message'] ?? 'Login Gagal';
         
-        // Terjemahkan error dari backend Go
         if (errorMessage.contains("invalid password")) {
           errorMessage = "Password yang Anda masukkan salah.";
         } else if (errorMessage.contains("failed to login user")) {
@@ -96,22 +76,58 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  // --- FUNGSI REGISTER YANG DIPERBARUI ---
-  Future<void> register(String email, String password, String name, String phone) async {
-    // Endpoint diubah ke /public/register sesuai controller Go Anda
+  // --- 🆕 FUNGSI GET OFFICE (DIPERBAIKI SESUAI ROUTES.GO) ---
+  Future<List<Office>> getOffices() async {
+    // Karena di routes.go Anda: groupes.Get("/office", ...) ada di dalam PublicRoutes
+    // Maka URL-nya adalah: .../api/public/office
+    final url = Uri.parse('$_baseUrl/public/office'); 
+    
+    print("Fetching offices from: $url"); // Debug URL
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        // Menangani struktur JSON backend.
+        // Jika response: { "status": "success", "data": [...] } -> ambil 'data'
+        // Jika response: [...] -> ambil langsung
+        final List<dynamic> officesJson;
+        if (data is Map && data.containsKey('data')) {
+           officesJson = data['data'];
+        } else if (data is List) {
+           officesJson = data;
+        } else {
+           officesJson = [];
+        }
+        
+        return officesJson.map((json) => Office.fromJson(json)).toList();
+      } else {
+        print("Gagal mengambil data office: ${response.statusCode} (${response.reasonPhrase})");
+        return [];
+      }
+    } catch (e) {
+      print("Error fetching offices: $e");
+      return []; // Return list kosong agar aplikasi tidak crash
+    }
+  }
+
+  // --- FUNGSI REGISTER ---
+  Future<void> register(String email, String password, String name, String? officeId) async {
     final url = Uri.parse('$_baseUrl/public/register'); 
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        // 'role_id' dihapus, karena backend (RegisterUser) sudah mengaturnya ke "user"
         body: jsonEncode({
           'email': email,
           'password': password,
           'name': name, 
-          'phone': phone, 
-          'divisi_id': '', // Tetap kirim string kosong jika backend mengharapkannya
-          'office_id': '',
+          'office_id': officeId ?? '', // Kirim office_id
+          
+          'phone': '', 
+          'divisi_id': '', 
           'departemen_id': '',
           'sub_direktorat_id': '',
           'jabatan': '',
@@ -120,16 +136,12 @@ class AuthService with ChangeNotifier {
 
       if (response.statusCode != 201 && response.statusCode != 200) {
         final errorData = jsonDecode(response.body);
-        // Lempar pesan error spesifik dari backend
         throw Exception(errorData['message'] ?? 'Registrasi Gagal');
       }
-      // Registrasi berhasil, tidak ada data yang perlu diproses di sini
     } catch (e) {
-      // Format ulang errornya agar lebih bersih
       throw Exception(e.toString().replaceAll("Exception: ", ""));
     }
   }
-  // --- AKHIR FUNGSI REGISTER ---
 
   Future<void> signOut() async {
     _currentUser = null;
