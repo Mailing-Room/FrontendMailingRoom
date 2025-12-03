@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:mailingroom/auth/auth_service.dart';
+import 'package:mailingroom/providers/surat_provider.dart';
 
 // Import Model
+import '../../models/surat.dart';
 import '../../models/office.dart';
 import '../../models/subdirektorat.dart'; 
 import '../../models/user.dart'; 
@@ -19,7 +21,7 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   AdminPage _selectedPage = AdminPage.dashboard;
-  bool _isSidebarExpanded = false;
+  bool _isSidebarExpanded = false; // Default tertutup di mobile
 
   // Warna tema
   final Color posOrange = const Color(0xFFF37021);
@@ -27,13 +29,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final Color posRed = const Color(0xFFC62828);
   final Color lightBg = const Color(0xFFF5F7FA);
 
-  // State untuk Data User (agar bisa di-refresh)
+  // State untuk Data User
   late Future<List<MyUser>> _usersFuture;
 
   @override
   void initState() {
     super.initState();
-    _refreshUsers(); // Load data awal
+    _refreshUsers(); 
   }
 
   void _refreshUsers() {
@@ -47,159 +49,213 @@ class _AdminDashboardState extends State<AdminDashboard> {
       _isSidebarExpanded = false;
     });
   }
+
+  // Mengambil data statistik real-time
+  Future<Map<String, int>> _fetchDashboardStats() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final suratProvider = Provider.of<SuratProvider>(context, listen: false);
+
+    try {
+      final results = await Future.wait([
+        authService.getAllUsers(),
+        authService.getOffices(),
+        authService.getSubDirektorats(),
+        suratProvider.allSuratStream.first, 
+      ]);
+
+      final users = results[0] as List<MyUser>;
+      final offices = results[1] as List<Office>;
+      final subDirs = results[2] as List<SubDirektorat>;
+      final surat = results[3] as List<Surat>;
+
+      return {
+        'users': users.length,
+        'offices': offices.length,
+        'divisi': subDirs.length,
+        'surat': surat.length,
+      };
+    } catch (e) {
+      // Fallback jika error
+      return {'users': 0, 'offices': 0, 'divisi': 0, 'surat': 0};
+    }
+  }
   
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final bool isMobile = constraints.maxWidth < 850;
-        if (!isMobile) _isSidebarExpanded = true;
-
-        // Desktop View
-        if (!isMobile) {
-          return Scaffold(
-            backgroundColor: lightBg,
-            body: Row(
-              children: [
-                _buildSideBar(context, isMobile: false),
-                Expanded(child: _buildMainContent(isMobile: false)),
-              ],
-            ),
-          );
+        final bool isMobile = constraints.maxWidth < 1000; // Breakpoint untuk tablet/desktop
+        
+        // Di desktop, sidebar default terbuka
+        if (!isMobile && !_isSidebarExpanded) {
+          // Kita tidak set state di build, tapi inisialisasi awal bisa diatur di initState jika mau
+          // Di sini kita biarkan user mengontrol atau default terbuka
         }
 
-        // Mobile View
-        return GestureDetector(
-          onTap: () => FocusScope.of(context).unfocus(),
-          child: Scaffold(
-            backgroundColor: lightBg,
-            appBar: AppBar(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black87,
-              elevation: 1.0,
-              title: Text(_getPageTitle(), style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black87)),
-              leading: IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () {
-                  FocusScope.of(context).unfocus();
-                  setState(() {
-                    _isSidebarExpanded = !_isSidebarExpanded;
-                  });
-                },
+        return Scaffold(
+          backgroundColor: lightBg,
+          body: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // SIDEBAR (Responsive)
+              if (!isMobile) 
+                _buildSideBar(context, isMobile: false),
+
+              // MAIN CONTENT
+              Expanded(
+                child: Scaffold(
+                  backgroundColor: lightBg,
+                  // AppBar hanya muncul di Mobile atau jika sidebar tertutup
+                  appBar: isMobile 
+                    ? AppBar(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black87,
+                        elevation: 0,
+                        centerTitle: true,
+                        title: Text("Admin Panel", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 18, color: posBlue)),
+                        leading: IconButton(
+                          icon: const Icon(Icons.menu),
+                          onPressed: () {
+                            // Buka Drawer di Mobile
+                            _scaffoldKey.currentState?.openDrawer();
+                          },
+                        ),
+                      )
+                    : null,
+                  drawer: isMobile ? Drawer(child: _buildSideBar(context, isMobile: true)) : null,
+                  body: _buildMainContent(isMobile: isMobile),
+                ),
               ),
-            ),
-            body: Stack(
-              children: [
-                _buildMainContent(isMobile: true),
-                if (_isSidebarExpanded) ...[
-                  GestureDetector(
-                    onTap: _closeSidebar,
-                    child: Container(color: Colors.black.withOpacity(0.5)),
-                  ),
-                  _buildSideBar(context, isMobile: true),
-                ]
-              ],
-            ),
+            ],
           ),
         );
       },
     );
   }
-
-  String _getPageTitle() {
-    switch (_selectedPage) {
-      case AdminPage.dashboard: return 'Dashboard';
-      case AdminPage.kelolaSurat: return 'Kelola Surat';
-      case AdminPage.kelolaUser: return 'Kelola User';
-      case AdminPage.kelolaDivisi: return 'Kelola Divisi';
-      case AdminPage.kelolaOffice: return 'Kelola Office';
-      case AdminPage.cetakLaporan: return 'Cetak Laporan';
-    }
-  }
   
+  // Key untuk mengontrol drawer di mobile
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // --- SIDEBAR ---
   Widget _buildSideBar(BuildContext context, {required bool isMobile}) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-      width: _isSidebarExpanded ? 250 : (isMobile ? 0 : 70),
-      color: posBlue, 
+    return Container(
+      width: 260,
+      color: Colors.white,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          // Header Logo
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+            decoration: BoxDecoration(
+              color: posBlue,
+              borderRadius: const BorderRadius.only(bottomRight: Radius.circular(30)),
+            ),
             child: Row(
-              mainAxisAlignment: _isSidebarExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
               children: [
-                Image.asset('assets/images/logo_pos.png', height: 32, errorBuilder: (c,e,s) => const Icon(Icons.mark_email_read, color: Colors.white, size: 32)),
-                if (_isSidebarExpanded) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Pos Indonesia', style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text('Admin Panel', style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
-                      ],
-                    ),
-                  )
-                ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                  child: Image.asset('assets/images/logo_pos.png', height: 30, errorBuilder: (c,e,s) => Icon(Icons.mark_email_read, color: posOrange)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('POS IND', style: GoogleFonts.plusJakartaSans(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text('Admin Dashboard', style: GoogleFonts.plusJakartaSans(color: Colors.white70, fontSize: 12)),
+                    ],
+                  ),
+                )
               ],
             ),
           ),
-          const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
+          
+          const SizedBox(height: 20),
+          
+          // Menu Items
           Expanded(
             child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
-                  _buildSideBarItem(context: context, title: 'Dashboard', icon: Icons.dashboard_outlined, page: AdminPage.dashboard, isMobile: isMobile),
-                  _buildSideBarItem(context: context, title: 'Kelola Surat', icon: Icons.drafts_outlined, page: AdminPage.kelolaSurat, isMobile: isMobile),
-                  _buildSideBarItem(context: context, title: 'Kelola User', icon: Icons.people_outline, page: AdminPage.kelolaUser, isMobile: isMobile),
-                  _buildSideBarItem(context: context, title: 'Kelola Divisi', icon: Icons.business_outlined, page: AdminPage.kelolaDivisi, isMobile: isMobile),
-                  _buildSideBarItem(context: context, title: 'Kelola Office', icon: Icons.location_city_outlined, page: AdminPage.kelolaOffice, isMobile: isMobile),
-                  _buildSideBarItem(context: context, title: 'Cetak Laporan', icon: Icons.print_outlined, page: AdminPage.cetakLaporan, isMobile: isMobile),
+                  _buildMenuLabel("MENU UTAMA"),
+                  _buildSideBarItem(title: 'Dashboard', icon: Icons.grid_view_rounded, page: AdminPage.dashboard),
+                  _buildSideBarItem(title: 'Kelola Surat', icon: Icons.mark_email_unread_rounded, page: AdminPage.kelolaSurat),
+                  
+                  const SizedBox(height: 20),
+                  _buildMenuLabel("MASTER DATA"),
+                  _buildSideBarItem(title: 'Kelola User', icon: Icons.people_alt_rounded, page: AdminPage.kelolaUser),
+                  _buildSideBarItem(title: 'Kelola Divisi', icon: Icons.domain_rounded, page: AdminPage.kelolaDivisi),
+                  _buildSideBarItem(title: 'Kelola Office', icon: Icons.location_city_rounded, page: AdminPage.kelolaOffice),
+                  
+                  const SizedBox(height: 20),
+                  _buildMenuLabel("LAPORAN"),
+                  _buildSideBarItem(title: 'Cetak Laporan', icon: Icons.print_rounded, page: AdminPage.cetakLaporan),
                 ],
               ),
             ),
           ),
-          const Divider(color: Colors.white24, height: 1, indent: 16, endIndent: 16),
-          const SizedBox(height: 8),
-          _buildSideBarItem(context: context, title: 'Logout', icon: Icons.logout, page: null, isLogout: true, isMobile: isMobile),
-          const SizedBox(height: 16),
+
+          // Footer Logout
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildSideBarItem(title: 'Logout', icon: Icons.logout_rounded, page: null, isLogout: true, isMobile: isMobile),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSideBarItem({required BuildContext context, required String title, required IconData icon, required bool isMobile, AdminPage? page, bool isLogout = false}) {
-    final bool isSelected = _selectedPage == page;
-    return InkWell(
-      onTap: () {
-        if (isLogout) {
-          Provider.of<AuthService>(context, listen: false).signOut();
-        } else if (page != null) {
-          setState(() {
-            _selectedPage = page;
-            if (isMobile) _isSidebarExpanded = false;
-          });
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? posOrange : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: _isSidebarExpanded ? MainAxisAlignment.start : MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 22),
-            if (_isSidebarExpanded) ...[
-              const SizedBox(width: 16),
-              Text(title, style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w500)),
-            ]
-          ],
+  Widget _buildMenuLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, bottom: 8),
+      child: Text(
+        text,
+        style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey[400], letterSpacing: 1.2),
+      ),
+    );
+  }
+
+  Widget _buildSideBarItem({required String title, required IconData icon, AdminPage? page, bool isLogout = false, bool isMobile = false}) {
+    final bool isSelected = _selectedPage == page && !isLogout;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (isLogout) {
+            Provider.of<AuthService>(context, listen: false).signOut();
+          } else if (page != null) {
+            setState(() {
+              _selectedPage = page;
+            });
+            if (isMobile) Navigator.pop(context); // Tutup drawer di mobile
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          margin: const EdgeInsets.only(bottom: 4),
+          decoration: BoxDecoration(
+            color: isSelected ? posBlue.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected ? Border.all(color: posBlue.withOpacity(0.1)) : null,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? posBlue : Colors.grey[500], size: 22),
+              const SizedBox(width: 12),
+              Text(
+                title, 
+                style: GoogleFonts.plusJakartaSans(
+                  color: isSelected ? posBlue : Colors.grey[700], 
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontSize: 14
+                )
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -208,188 +264,355 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget _buildMainContent({required bool isMobile}) {
     switch (_selectedPage) {
       case AdminPage.dashboard:
-        return SingleChildScrollView(padding: EdgeInsets.all(isMobile ? 16 : 32), child: _buildDashboardContent(isMobile: isMobile));
+        return SingleChildScrollView(padding: EdgeInsets.only(bottom: 100), child: _buildDashboardContent(isMobile: isMobile));
       case AdminPage.kelolaSurat:
         return const Center(child: Text("Fitur Kelola Surat"));
       case AdminPage.kelolaUser:
-        return SingleChildScrollView(padding: EdgeInsets.all(isMobile ? 16 : 32), child: _buildKelolaUserContent(isMobile: isMobile));
+        return SingleChildScrollView(padding: EdgeInsets.only(bottom: 100), child: _buildKelolaUserContent(isMobile: isMobile));
       case AdminPage.kelolaDivisi:
-        return const Center(child: Text("Fitur Kelola Divisi"));
+        return SingleChildScrollView(padding: EdgeInsets.only(bottom: 100), child: _buildKelolaDivisiContent(isMobile: isMobile));
       case AdminPage.kelolaOffice:
-        return const Center(child: Text("Fitur Kelola Office"));
+        return SingleChildScrollView(padding: EdgeInsets.only(bottom: 100), child: _buildKelolaOfficeContent(isMobile: isMobile));
       case AdminPage.cetakLaporan:
-        return Center(child: Text('Halaman Cetak Laporan', style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold)));
+        return Center(child: Text('Halaman Cetak Laporan', style: GoogleFonts.plusJakartaSans(fontSize: 24)));
     }
   }
 
+  // --- KONTEN DASHBOARD PREMIUM ---
   Widget _buildDashboardContent({required bool isMobile}) {
-    final List<Map<String, dynamic>> stats = [
-      {'title': 'Total Surat Keluar', 'value': '0', 'icon': Icons.mail_outline, 'color': Colors.green},
-      {'title': 'Total User', 'value': '0', 'icon': Icons.people_alt_outlined, 'color': posBlue},
-      {'title': 'Total Divisi', 'value': '0', 'icon': Icons.business_center_outlined, 'color': posOrange},
-    ];
-    
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!isMobile) Text('Dashboard', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
-        if (!isMobile) const SizedBox(height: 24),
-        Text('Ringkasan', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
-        const SizedBox(height: 16),
-        GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isMobile ? 1 : 3,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: isMobile ? 3 : 2.2,
+        // 1. Header Banner
+        _buildHeaderBanner("Dashboard Overview", "Ringkasan aktivitas sistem Mailing Room."),
+
+        // 2. Konten Utama (Statistik & Aksi Cepat)
+        Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: FutureBuilder<Map<String, int>>(
+            future: _fetchDashboardStats(),
+            builder: (context, snapshot) {
+              int totalUser = 0;
+              int totalSurat = 0;
+              int totalDivisi = 0;
+              int totalOffice = 0;
+
+              if (snapshot.hasData) {
+                totalUser = snapshot.data!['users'] ?? 0;
+                totalSurat = snapshot.data!['surat'] ?? 0;
+                totalDivisi = snapshot.data!['divisi'] ?? 0;
+                totalOffice = snapshot.data!['offices'] ?? 0;
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- BAGIAN 1: STATISTIK ---
+                  _buildSectionTitle("Statistik"),
+                  const SizedBox(height: 16),
+                  
+                  // Gunakan WRAP agar responsif dan tidak overflow
+                  LayoutBuilder(builder: (context, constraints) {
+                     // Logic lebar kartu agar responsif
+                     double cardWidth = (constraints.maxWidth - 20) / 2; // Default 2 kolom
+                     if (constraints.maxWidth > 900) cardWidth = (constraints.maxWidth - 45) / 4; // 4 kolom di layar lebar
+                     
+                     return Wrap(
+                       spacing: 15,
+                       runSpacing: 15,
+                       children: [
+                         _buildStatCard("Total User", totalUser.toString(), Icons.people_alt_rounded, Colors.blue, width: cardWidth),
+                         _buildStatCard("Total Surat", totalSurat.toString(), Icons.mark_email_read_rounded, Colors.green, width: cardWidth),
+                         _buildStatCard("Total Divisi", totalDivisi.toString(), Icons.domain_rounded, Colors.orange, width: cardWidth),
+                         _buildStatCard("Total Office", totalOffice.toString(), Icons.location_city_rounded, Colors.purple, width: cardWidth),
+                       ],
+                     );
+                  }),
+
+                  const SizedBox(height: 32),
+
+                  // --- BAGIAN 2: AKSI CEPAT ---
+                  _buildSectionTitle("Aksi Cepat"),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      _buildActionCard("Tambah User", Icons.person_add_rounded, Colors.blue, () => _showUserFormDialog()),
+                      _buildActionCard("Tambah Surat", Icons.post_add_rounded, posOrange, () {}), 
+                      _buildActionCard("Tambah Divisi", Icons.add_business_rounded, Colors.purple, () {}), 
+                      _buildActionCard("Buat Laporan", Icons.print_rounded, Colors.teal, () {}), 
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
-          itemCount: stats.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemBuilder: (context, index) {
-            final stat = stats[index];
-            return Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(stat['title'], style: GoogleFonts.poppins(color: Colors.black54, fontSize: 15, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          const SizedBox(height: 4),
-                          Text(stat['value'], style: GoogleFonts.poppins(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.black87)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: (stat['color'] as Color).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-                      child: Icon(stat['icon'], color: stat['color'], size: 28),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         ),
       ],
     );
   }
 
-  Widget _buildKelolaUserContent({required bool isMobile}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  // --- HEADER PAGE BANNER ---
+  Widget _buildHeaderBanner(String title, String subtitle) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+          const SizedBox(height: 4),
+          Text(subtitle, style: GoogleFonts.plusJakartaSans(fontSize: 14, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) => Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87));
+
+  // --- KARTU STATISTIK PREMIUM ---
+  Widget _buildStatCard(String title, String count, IconData icon, Color color, {required double width}) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 5))],
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      // Clip untuk memotong dekorasi icon
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // Dekorasi Icon Besar Pudar
+          Positioned(
+            right: -10,
+            bottom: -10,
+            child: Icon(icon, size: 80, color: color.withOpacity(0.1)),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 16),
+              Text(count, style: GoogleFonts.plusJakartaSans(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87)),
+              Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 14, color: Colors.grey[500], fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- KARTU AKSI CEPAT ---
+  Widget _buildActionCard(String title, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 150, // Fixed width for action buttons
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [BoxShadow(color: color.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (!isMobile) Text('Kelola User', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
-            ElevatedButton.icon(
-              onPressed: () => _showUserFormDialog(),
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text('Tambah User'),
-              style: ElevatedButton.styleFrom(backgroundColor: posOrange, foregroundColor: Colors.white),
-            )
+            CircleAvatar(backgroundColor: color.withOpacity(0.1), radius: 24, child: Icon(icon, color: color, size: 24)),
+            const SizedBox(height: 12),
+            Text(title, textAlign: TextAlign.center, style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
           ],
         ),
-        const SizedBox(height: 20),
-        
-        FutureBuilder<List<MyUser>>(
-          future: _usersFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: CircularProgressIndicator(),
-              ));
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text("Gagal memuat data user: ${snapshot.error}"));
-            }
-            
-            final users = snapshot.data ?? [];
-            if (users.isEmpty) {
-              return Center(child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Text("Belum ada data user", style: GoogleFonts.poppins(color: Colors.grey)),
-              ));
-            }
+      ),
+    );
+  }
 
-            return SizedBox(
-              width: double.infinity,
-              child: Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      headingRowColor: MaterialStateProperty.all(Colors.grey[50]),
-                      dataRowColor: MaterialStateColor.resolveWith((states) => Colors.transparent),
-                      columns: const [
-                        DataColumn(label: Text('NAMA')),
-                        DataColumn(label: Text('EMAIL')),
-                        DataColumn(label: Text('ROLE')),
-                        DataColumn(label: Text('AKSI')),
-                      ],
-                      rows: users.map((user) => DataRow(cells: [
-                        DataCell(Text(user.nama, style: GoogleFonts.poppins())),
-                        DataCell(Text(user.email, style: GoogleFonts.poppins())),
-                        DataCell(_buildRoleChip(user.role)),
-                        DataCell(Row(children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined), 
-                            color: posBlue, 
-                            tooltip: 'Edit User',
-                            onPressed: () => _showUserFormDialog(user: user)
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline), 
-                            color: posRed, 
-                            tooltip: 'Hapus User',
-                            onPressed: () => _confirmDeleteUser(user)
-                          ),
-                        ])),
-                      ])).toList(),
-                    ),
-                  ),
-                ),
+  // --- HALAMAN DAFTAR USER / OFFICE / DIVISI (Tabel) ---
+  Widget _buildKelolaUserContent({required bool isMobile}) {
+    return Column(
+      children: [
+        _buildHeaderBanner("Manajemen User", "Kelola data pengguna, role, dan akses."),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _showUserFormDialog(), 
+                    icon: const Icon(Icons.add), 
+                    label: const Text("Tambah User"),
+                    style: ElevatedButton.styleFrom(backgroundColor: posOrange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16)),
+                  )
+                ],
               ),
-            );
-          },
-        ),
+              const SizedBox(height: 20),
+              _buildUserTable(),
+            ],
+          ),
+        )
       ],
     );
+  }
+  
+  Widget _buildKelolaOfficeContent({required bool isMobile}) {
+     return Column(
+      children: [
+        _buildHeaderBanner("Manajemen Kantor", "Daftar lokasi kantor dan cabang."),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: _buildOfficeTable(), // Gunakan helper table
+        )
+      ]
+     );
+  }
+  
+  Widget _buildKelolaDivisiContent({required bool isMobile}) {
+     return Column(
+      children: [
+        _buildHeaderBanner("Manajemen Divisi", "Daftar divisi dan sub-direktorat."),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: _buildDivisiTable(), // Gunakan helper table
+        )
+      ]
+     );
+  }
+
+  // --- HELPERS UNTUK TABEL ---
+  Widget _buildUserTable() {
+    return FutureBuilder<List<MyUser>>(
+      future: _usersFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        final users = snapshot.data ?? [];
+        if (users.isEmpty) return _buildEmptyState("Belum ada user");
+
+        return _buildDataTableWrapper(
+          columns: ['Nama', 'Email', 'Role', 'Aksi'],
+          rows: users.map((user) => DataRow(cells: [
+            DataCell(Text(user.nama, style: GoogleFonts.plusJakartaSans())),
+            DataCell(Text(user.email, style: GoogleFonts.plusJakartaSans())),
+            DataCell(_buildRoleChip(user.role)),
+            DataCell(Row(children: [
+              IconButton(icon: const Icon(Icons.edit_outlined, size: 20), color: posBlue, onPressed: () => _showUserFormDialog(user: user)),
+              IconButton(icon: const Icon(Icons.delete_outline, size: 20), color: posRed, onPressed: () => _confirmDeleteUser(user)),
+            ])),
+          ])).toList(),
+        );
+      },
+    );
+  }
+  
+  Widget _buildOfficeTable() {
+    return FutureBuilder<List<Office>>(
+        future: Provider.of<AuthService>(context, listen: false).getOffices(),
+        builder: (context, snapshot) {
+           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+           final offices = snapshot.data ?? [];
+           if (offices.isEmpty) return _buildEmptyState("Belum ada data office");
+
+           return _buildDataTableWrapper(
+             columns: ['Nama Office', 'Kota', 'Alamat', 'Aksi'],
+             rows: offices.map((office) => DataRow(cells: [
+               DataCell(Text(office.namaOffice)),
+               DataCell(Text(office.kota)),
+               DataCell(Text(office.alamat, overflow: TextOverflow.ellipsis)),
+               DataCell(Row(children: [
+                 IconButton(icon: const Icon(Icons.edit_outlined, size: 20), color: posBlue, onPressed: () {}),
+                 IconButton(icon: const Icon(Icons.delete_outline, size: 20), color: posRed, onPressed: () {}),
+               ])),
+             ])).toList()
+           );
+        },
+    );
+  }
+  
+  Widget _buildDivisiTable() {
+    return FutureBuilder<List<SubDirektorat>>(
+        future: Provider.of<AuthService>(context, listen: false).getSubDirektorats(),
+        builder: (context, snapshot) {
+           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+           final subs = snapshot.data ?? [];
+           if (subs.isEmpty) return _buildEmptyState("Belum ada data divisi");
+
+           return _buildDataTableWrapper(
+             columns: ['Nama Divisi', 'Kode', 'Aksi'],
+             rows: subs.map((sub) => DataRow(cells: [
+               DataCell(Text(sub.nama)),
+               DataCell(Text(sub.kode)),
+               DataCell(Row(children: [
+                 IconButton(icon: const Icon(Icons.edit_outlined, size: 20), color: posBlue, onPressed: () {}),
+                 IconButton(icon: const Icon(Icons.delete_outline, size: 20), color: posRed, onPressed: () {}),
+               ])),
+             ])).toList()
+           );
+        },
+    );
+  }
+
+  Widget _buildDataTableWrapper({required List<String> columns, required List<DataRow> rows}) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.grey.shade100),
+        child: DataTable(
+          headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
+          headingTextStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+          dataTextStyle: GoogleFonts.plusJakartaSans(color: Colors.black87),
+          columns: columns.map((c) => DataColumn(label: Text(c))).toList(),
+          rows: rows,
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildEmptyState(String msg) {
+     return Center(child: Padding(padding: const EdgeInsets.all(40), child: Column(
+       children: [
+         Icon(Icons.folder_open_rounded, size: 48, color: Colors.grey.shade300),
+         const SizedBox(height: 12),
+         Text(msg, style: GoogleFonts.plusJakartaSans(color: Colors.grey)),
+       ],
+     )));
   }
 
   Widget _buildRoleChip(String role) {
     Color color;
-    switch (role.toLowerCase()) {
-      case 'admin': color = posOrange; break;
-      case 'kurir': color = Colors.green; break;
-      default: color = posBlue;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(role.toUpperCase(), style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
-    );
+    switch (role.toLowerCase()) { case 'admin': color = posOrange; break; case 'kurir': color = Colors.green; break; default: color = posBlue; }
+    return Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(role.toUpperCase(), style: GoogleFonts.plusJakartaSans(color: color, fontWeight: FontWeight.bold, fontSize: 11)));
   }
 
-  // --- DIALOG FORM (CREATE / UPDATE) DENGAN PERBAIKAN CONTEXT ---
+  // --- DIALOG FORM & DELETE (Sama seperti sebelumnya, copy paste saja bagian ini) ---
   void _showUserFormDialog({MyUser? user}) async {
-    final isEdit = user != null;
-    
+     // ... (Gunakan kode dialog dari respons "Admin Dashboard (CRUD User)" sebelumnya)
+     // Agar kode tidak terlalu panjang di sini, logika dialognya sama persis.
+     // Pastikan menggunakan 'mounted' check dan ScaffoldMessenger yang aman.
+     
+     // --- RECAP SINGKAT LOGIKA DIALOG ---
+     // 1. Init Controllers
+     // 2. Fetch Offices & SubDirs
+     // 3. if (!mounted) return;
+     // 4. showDialog -> StatefulBuilder
+     // 5. ElevatedButton onPressed -> Validasi -> final messenger = ScaffoldMessenger.of(this.context); -> Navigator.pop -> await authService... -> messenger.showSnackBar
+     
+     // Kode lengkap dialog sudah ada di file sebelumnya, silakan integrasikan.
+     final isEdit = user != null;
     final nameController = TextEditingController(text: isEdit ? user.nama : '');
     final emailController = TextEditingController(text: isEdit ? user.email : '');
     final passwordController = TextEditingController();
@@ -407,13 +630,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       subDirektorats = await authService.getSubDirektorats();
     } catch (e) { print("Gagal load master data: $e"); }
 
-    // Gunakan 'mounted' check di dalam async jika perlu, 
-    // tapi karena showDialog akan membuka konteks baru, kita aman di sini.
     if (!mounted) return;
 
     showDialog(
       context: context,
-      builder: (dialogContext) { // Ubah nama jadi dialogContext agar tidak bingung
+      builder: (dialogContext) { 
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
@@ -425,52 +646,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextField(
-                        controller: nameController,
-                        decoration: const InputDecoration(labelText: 'Nama Lengkap', border: OutlineInputBorder()),
-                      ),
+                      TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nama Lengkap', border: OutlineInputBorder())),
                       const SizedBox(height: 12),
-                      TextField(
-                        controller: emailController,
-                        decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                      ),
+                      TextField(controller: emailController, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
                       const SizedBox(height: 12),
-                      TextField(
-                        controller: passwordController,
-                        decoration: InputDecoration(
-                          labelText: isEdit ? 'Password (Kosongkan jika tidak diubah)' : 'Password',
-                          border: const OutlineInputBorder()
-                        ),
-                        obscureText: true,
-                      ),
+                      TextField(controller: passwordController, decoration: InputDecoration(labelText: isEdit ? 'Password (Kosongkan jika tidak diubah)' : 'Password', border: const OutlineInputBorder()), obscureText: true),
                       const SizedBox(height: 12),
-                      
                       DropdownButtonFormField<String>(
                         value: selectedRole,
                         decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
-                        items: ['admin', 'kurir', 'user', 'penerima'].map((role) {
-                          return DropdownMenuItem(value: role, child: Text(role.toUpperCase()));
-                        }).toList(),
+                        items: ['admin', 'kurir', 'user', 'penerima'].map((role) => DropdownMenuItem(value: role, child: Text(role.toUpperCase()))).toList(),
                         onChanged: (val) => setStateDialog(() => selectedRole = val),
                       ),
                       const SizedBox(height: 12),
-
                       DropdownButtonFormField<String>(
                         value: selectedOfficeId,
                         decoration: const InputDecoration(labelText: 'Kantor / Office', border: OutlineInputBorder()),
-                        items: offices.map((office) {
-                          return DropdownMenuItem(value: office.id, child: Text(office.namaOffice));
-                        }).toList(),
+                        items: offices.map((office) => DropdownMenuItem(value: office.id, child: Text(office.namaOffice))).toList(),
                         onChanged: (val) => setStateDialog(() => selectedOfficeId = val),
                       ),
                       const SizedBox(height: 12),
-
                       DropdownButtonFormField<String>(
                         value: selectedSubDirektoratId,
                         decoration: const InputDecoration(labelText: 'Sub Direktorat', border: OutlineInputBorder()),
-                        items: subDirektorats.map((sub) {
-                          return DropdownMenuItem(value: sub.id, child: Text(sub.nama));
-                        }).toList(),
+                        items: subDirektorats.map((sub) => DropdownMenuItem(value: sub.id, child: Text(sub.nama))).toList(),
                         onChanged: (val) => setStateDialog(() => selectedSubDirektoratId = val),
                       ),
                     ],
@@ -478,32 +677,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext), 
-                  child: Text('Batal', style: TextStyle(color: Colors.grey[700]))
-                ),
+                TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text('Batal', style: TextStyle(color: Colors.grey[700]))),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: posOrange, foregroundColor: Colors.white),
                   onPressed: () async {
-                    // Validasi Sederhana
                     if (nameController.text.isEmpty || emailController.text.isEmpty || selectedRole == null) {
-                      // Gunakan dialogContext jika snackbar ingin muncul di atas dialog (jarang), 
-                      // atau gunakan ScaffoldMessenger dengan context utama jika dialog sudah ditutup.
-                      // Tapi kita akan tutup dialog dulu.
                       Navigator.pop(dialogContext);
                       ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Nama, Email, dan Role wajib diisi')));
                       return;
                     }
-
-                    // --- PERBAIKAN UTAMA DI SINI ---
-                    // 1. Simpan referensi ScaffoldMessenger sebelum pop dan await
                     final messenger = ScaffoldMessenger.of(this.context);
-
-                    // 2. Tutup Dialog
                     Navigator.pop(dialogContext); 
-                    
                     try {
-                      // 3. Proses Async
                       if (isEdit) {
                         final Map<String, dynamic> updateData = {
                            'name': nameController.text,
@@ -512,12 +697,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                            'office_id': selectedOfficeId ?? '',
                            'sub_direktorat_id': selectedSubDirektoratId ?? '',
                         };
-                        if (passwordController.text.isNotEmpty) {
-                           updateData['password'] = passwordController.text;
-                        }
-                        
+                        if (passwordController.text.isNotEmpty) updateData['password'] = passwordController.text;
                         await authService.updateUser(user.uid, updateData);
-                        // 4. Gunakan variabel messenger
                         messenger.showSnackBar(const SnackBar(content: Text('User berhasil diperbarui'), backgroundColor: Colors.green));
                       } else {
                         await authService.addUser(
@@ -530,7 +711,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         );
                          messenger.showSnackBar(const SnackBar(content: Text('User berhasil ditambahkan'), backgroundColor: Colors.green));
                       }
-                      
                       _refreshUsers(); 
                     } catch (e) {
                       messenger.showSnackBar(SnackBar(content: Text('Gagal: $e'), backgroundColor: Colors.red));
@@ -545,8 +725,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       },
     );
   }
-
-  // --- DIALOG HAPUS USER DENGAN PERBAIKAN CONTEXT ---
+  
   void _confirmDeleteUser(MyUser user) {
     showDialog(
       context: context,
@@ -558,14 +737,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: posRed, foregroundColor: Colors.white),
             onPressed: () async {
-              // --- PERBAIKAN: Tangkap Messenger ---
               final messenger = ScaffoldMessenger.of(context);
-              
-              // Tutup Dialog
               Navigator.pop(dialogContext);
-
               try {
-                await Provider.of<AuthService>(context, listen: false).deleteUser(user.uid);
+                await Provider.of<AuthService>(this.context, listen: false).deleteUser(user.uid);
                 messenger.showSnackBar(const SnackBar(content: Text('User berhasil dihapus'), backgroundColor: Colors.green));
                 _refreshUsers(); 
               } catch (e) {
