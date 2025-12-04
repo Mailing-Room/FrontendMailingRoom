@@ -24,7 +24,8 @@ class PengirimDashboard extends StatelessWidget {
     final suratProvider = Provider.of<SuratProvider>(context, listen: false);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 100),
+      // Padding handap disaluyukeun supaya teu panjang teuing
+      padding: const EdgeInsets.only(bottom: 20), 
       child: Column(
         children: [
           // 1. HEADER / BANNER
@@ -48,8 +49,6 @@ class PengirimDashboard extends StatelessWidget {
                     const SizedBox(height: 32),
 
                     // --- STREAM BUILDER UTAMA ---
-                    // Kita bungkus Statistik & List Surat dalam satu StreamBuilder
-                    // agar data diambil sekali dan konsisten.
                     StreamBuilder<List<Surat>>(
                       stream: suratProvider.allSuratStream,
                       builder: (context, snapshot) {
@@ -79,7 +78,6 @@ class PengirimDashboard extends StatelessWidget {
                             // --- SECTION STATISTIK ---
                             _buildSectionHeader("Ringkasan Surat"),
                             const SizedBox(height: 16),
-                            // Kirim hasil hitungan ke widget grid
                             _buildStatisticsGrid(context, masuk, keluar, pending, selesai),
 
                             const SizedBox(height: 32),
@@ -88,11 +86,12 @@ class PengirimDashboard extends StatelessWidget {
                             _buildSectionHeader("Surat Terbaru"),
                             const SizedBox(height: 16),
                             
-                            // Tampilkan loading jika data belum ada
                             if (snapshot.connectionState == ConnectionState.waiting)
                                const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
                             else
                                _buildRecentLettersList(context, suratList),
+                               
+                            // --- PERBAIKAN: Spasi kosong badag dihapus di dieu ---
                           ],
                         );
                       },
@@ -285,7 +284,7 @@ class PengirimDashboard extends StatelessWidget {
     );
   }
 
-  // --- WIDGET: GRID STATISTIK (Menerima Data Langsung) ---
+  // --- WIDGET: GRID STATISTIK ---
   Widget _buildStatisticsGrid(BuildContext context, int masuk, int keluar, int pending, int selesai) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -355,7 +354,7 @@ class PengirimDashboard extends StatelessWidget {
     );
   }
 
-  // --- WIDGET: LIST SURAT TERBARU (Menerima Data Langsung) ---
+  // --- WIDGET: LIST SURAT TERBARU ---
   Widget _buildRecentLettersList(BuildContext context, List<Surat> suratList) {
     if (suratList.isEmpty) {
       return _buildEmptyState();
