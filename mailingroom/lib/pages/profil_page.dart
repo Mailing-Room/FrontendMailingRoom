@@ -16,6 +16,7 @@ class ProfilPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 120), // *** FIX: AGAR TIDAK TERTUTUP NAVBAR
         child: Column(
           children: [
             // 1. HEADER PROFILE (Fixed Height)
@@ -244,7 +245,6 @@ class ProfilPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx); // Tutup dialog
-              // Panggil fungsi logout dari AuthService
               Provider.of<AuthService>(context, listen: false).signOut();
             },
             style: ElevatedButton.styleFrom(
