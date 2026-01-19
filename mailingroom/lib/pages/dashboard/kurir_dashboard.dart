@@ -102,10 +102,14 @@ class _KurirDashboardState extends State<KurirDashboard>
             body: TabBarView(
               controller: _tabController,
               children: [
-                _buildContentBody(listMenunggu, 'Belum ada surat untuk diambil.', stats),
-                _buildContentBody(listProses, 'Tidak ada surat yang sedang dalam proses.', stats),
-                _buildContentBody(listTerkirim, 'Belum ada surat yang terkirim hari ini.', stats),
-                _buildContentBody(listGagal, 'Tidak ada surat yang gagal.', stats),
+                _buildContentBody(
+                    listMenunggu, 'Belum ada surat untuk diambil.', stats),
+                _buildContentBody(
+                    listProses, 'Tidak ada surat yang sedang dalam proses.', stats),
+                _buildContentBody(
+                    listTerkirim, 'Belum ada surat yang terkirim hari ini.', stats),
+                _buildContentBody(
+                    listGagal, 'Tidak ada surat yang gagal.', stats),
               ],
             ),
           );
@@ -128,7 +132,6 @@ class _KurirDashboardState extends State<KurirDashboard>
     );
   }
 
-  // HEADER — Logo POSIND di kiri, teks di tengah
   SliverAppBar _buildHeader(BuildContext context, String namaKurir) {
     return SliverAppBar(
       backgroundColor: Colors.white,
@@ -137,9 +140,7 @@ class _KurirDashboardState extends State<KurirDashboard>
       automaticallyImplyLeading: false,
       titleSpacing: 16,
       title: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          // Kiri: logo POSIND
           Image.asset(
             'assets/images/POSIND_2023.svg.png',
             height: 42,
@@ -149,7 +150,6 @@ class _KurirDashboardState extends State<KurirDashboard>
                     color: Colors.orange, size: 40),
           ),
           const SizedBox(width: 10),
-          // Tengah: teks
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -173,7 +173,6 @@ class _KurirDashboardState extends State<KurirDashboard>
     );
   }
 
-  // GRID STATUS
   SliverToBoxAdapter _buildStatsGrid(Map<String, int> stats) {
     return SliverToBoxAdapter(
       child: Padding(
@@ -186,7 +185,7 @@ class _KurirDashboardState extends State<KurirDashboard>
                 crossAxisCount: crossAxisCount,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 3.0,
+                childAspectRatio: 2.4,
               ),
               itemCount: 4,
               shrinkWrap: true,
@@ -194,10 +193,10 @@ class _KurirDashboardState extends State<KurirDashboard>
               itemBuilder: (context, index) {
                 final titles = ['Menunggu', 'Proses', 'Terkirim', 'Gagal'];
                 final icons = [
-                  Icons.access_time_filled_rounded, // Menunggu
-                  Icons.delivery_dining_rounded, // Proses
-                  Icons.check_circle_rounded, // Terkirim
-                  Icons.error_rounded, // Gagal
+                  Icons.access_time_filled_rounded,
+                  Icons.delivery_dining_rounded,
+                  Icons.check_circle_rounded,
+                  Icons.error_rounded,
                 ];
                 final colors = [
                   Colors.orange,
@@ -227,6 +226,7 @@ class _KurirDashboardState extends State<KurirDashboard>
     );
   }
 
+  /// ================= FIX OVERFLOW DI SINI =================
   Widget _buildStatCard(
       String title, int count, IconData icon, Color bgColor, Color fgColor) {
     return Container(
@@ -236,6 +236,7 @@ class _KurirDashboardState extends State<KurirDashboard>
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
+        mainAxisSize: MainAxisSize.min, // ✅ FIX OVERFLOW
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: fgColor, size: 30),
@@ -276,12 +277,10 @@ class _KurirDashboardState extends State<KurirDashboard>
     );
   }
 
-  // Logo kurir di bawah teks kosong
   Widget _buildEmptyList(String message) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 60.0, horizontal: 20.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             message,
@@ -304,9 +303,13 @@ class _KurirDashboardState extends State<KurirDashboard>
 
   Widget _buildSummaryCard(Map<String, int> stats) {
     int totalDiproses =
-        (stats['proses'] ?? 0) + (stats['terkirim'] ?? 0) + (stats['gagal'] ?? 0);
+        (stats['proses'] ?? 0) +
+        (stats['terkirim'] ?? 0) +
+        (stats['gagal'] ?? 0);
     double tingkatKeberhasilan =
-        totalDiproses == 0 ? 100 : ((stats['terkirim'] ?? 0) / totalDiproses * 100);
+        totalDiproses == 0
+            ? 100
+            : ((stats['terkirim'] ?? 0) / totalDiproses * 100);
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -323,32 +326,15 @@ class _KurirDashboardState extends State<KurirDashboard>
         children: [
           Text('Ringkasan Hari Ini',
               style: GoogleFonts.poppins(
-                  fontSize: 18, fontWeight: FontWeight.bold, color: posBlue)),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: posBlue)),
           const SizedBox(height: 16),
-          _buildSummaryItem(stats['terkirim'] ?? 0, 'Surat Terkirim', Colors.green),
+          _buildSummaryItem(
+              stats['terkirim'] ?? 0, 'Surat Terkirim', Colors.green),
           const SizedBox(height: 12),
-          _buildSummaryItem(stats['proses'] ?? 0, 'Sedang Diproses', Colors.blue),
-          const Divider(height: 32),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Tingkat Keberhasilan',
-                    style: GoogleFonts.poppins(
-                        color: Colors.green.shade800,
-                        fontWeight: FontWeight.w600)),
-                Text('${tingkatKeberhasilan.toStringAsFixed(0)}%',
-                    style: GoogleFonts.poppins(
-                        color: Colors.green.shade800,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18)),
-              ],
-            ),
-          ),
+          _buildSummaryItem(
+              stats['proses'] ?? 0, 'Sedang Diproses', Colors.blue),
         ],
       ),
     );
